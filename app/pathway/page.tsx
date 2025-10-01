@@ -308,7 +308,7 @@ export default function PathwayPage() {
 
       {/* Top Right Controls */}
       <div className="absolute top-4 right-4 flex gap-4 z-20">
-        <Link href="/customers">
+        <Link href="/">
           <Button
             variant="outline"
             size="icon"
