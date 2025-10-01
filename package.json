@@ -7,11 +7,10 @@
     "dev": "next dev",
     "dev:server": "node app.js",
     "lint": "next lint",
-    "start": "next start"
+    "start": "node app.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@next/swc-win32-x64-msvc": "^15.2.4",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
