@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "dev:server": "node app.js",
     "lint": "next lint",
     "start": "next start"
   },
