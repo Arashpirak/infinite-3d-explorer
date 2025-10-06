@@ -1,137 +1,72 @@
 "use client"
 
-import type React from "react"
-
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Rocket, BookOpen, Upload } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Canvas } from "@react-three/fiber"
+import { Stars } from "@react-three/drei"
+import { StarWarsChat, type ChatMessage } from "@/components/star-wars-chat"
 
 export default function HomePage() {
-  const [uploadStatus, setUploadStatus] = useState<string>("")
+  // Simple chat demo state; replace with your real chat later
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { text: "Hello! How can I help you today?", sender: "ai", timestamp: Date.now() },
+  ])
 
-  const handleQuizUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  // Delayed audio playback after page fully loads
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-    try {
-      setUploadStatus("Loading quiz...")
+  useEffect(() => {
+    audioRef.current = new Audio("/music/background-music.mp3")
 
-      const text = await file.text()
-      const quizData = JSON.parse(text)
-
-      // Validate quiz data structure
-      if (!Array.isArray(quizData) || quizData.length === 0) {
-        setUploadStatus("Invalid quiz format. Please check your JSON file.")
-        return
+    const tryPlay = async () => {
+      try {
+        // delay a few seconds to ensure the page feels loaded
+        await new Promise((r) => setTimeout(r, 2500))
+        if (!audioRef.current) return
+        audioRef.current.volume = 0.25
+        audioRef.current.currentTime = 0
+        await audioRef.current.play()
+      } catch {
+        // Autoplay blocked -> wait for any user interaction to start
+        const onFirstInteract = async () => {
+          if (!audioRef.current) return
+          try {
+            audioRef.current.volume = 0.25
+            audioRef.current.currentTime = 0
+            await audioRef.current.play()
+          } finally {
+            window.removeEventListener("click", onFirstInteract)
+            window.removeEventListener("keydown", onFirstInteract)
+          }
+        }
+        window.addEventListener("click", onFirstInteract, { once: true })
+        window.addEventListener("keydown", onFirstInteract, { once: true })
       }
-
-      // Store in localStorage with unique ID
-      const quizId = `quiz-${Date.now()}`
-      localStorage.setItem(quizId, JSON.stringify(quizData))
-
-      setUploadStatus("Quiz loaded! Opening...")
-      setTimeout(() => {
-        window.open(`/pathway?quiz=${quizId}`, "_blank")
-        setUploadStatus("")
-      }, 500)
-    } catch (error) {
-      console.error("Error uploading quiz:", error)
-      setUploadStatus("Failed to load quiz. Please check your JSON file format.")
-      setTimeout(() => setUploadStatus(""), 3000)
     }
-  }
+
+    tryPlay()
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#08075C] via-[#01ADEF] to-[#08075C] flex items-center justify-center p-8">
-      <div className="max-w-4xl w-full">
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-white mb-4">Welcome to Your Universe</h1>
-          <p className="text-xl text-white/80">Explore the galaxy or test your English vocabulary</p>
-        </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background gradient like the explorer */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#08075C] via-[#01ADEF] to-[#08075C]" />
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Galaxy Explorer Card */}
-          <Link href="/page">
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border-2 border-white/20 hover:border-[#01ADEF] transition-all duration-300 hover:scale-105 cursor-pointer group">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center group-hover:animate-pulse">
-                  <Rocket size={40} className="text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-white">Galaxy Explorer</h2>
-                <p className="text-white/80 leading-relaxed">
-                  Navigate through infinite space, discover customer sites, and explore deeper levels with portals and
-                  treasures
-                </p>
-                <Button className="bg-[#01ADEF] hover:bg-[#0194D1] text-white px-8 py-3 text-lg">
-                  Start Exploring
-                </Button>
-              </div>
-            </div>
-          </Link>
+      {/* Star field */}
+      <Canvas className="absolute inset-0">
+        <Stars radius={100} depth={50} count={6000} factor={5} saturation={0} fade speed={1.5} />
+      </Canvas>
 
-          {/* English Quiz Card */}
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border-2 border-white/20 hover:border-[#ffd700] transition-all duration-300 hover:scale-105">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
-                <BookOpen size={40} className="text-white" />
-              </div>
-              <h2 className="text-3xl font-bold text-white">English Quiz</h2>
-              <p className="text-white/80 leading-relaxed">
-                Upload your vocabulary JSON file and test your English skills with interactive quizzes
-              </p>
-
-              <div className="space-y-4 w-full">
-                <Link href="/pathway?quiz=/quizzes/barrons-unit1.json">
-                  <Button className="w-full bg-[#ffd700] hover:bg-[#ffed4e] text-[#08075C] px-8 py-3 text-lg font-bold">
-                    Try Sample Quiz
-                  </Button>
-                </Link>
-
-                <div className="relative">
-                  <input type="file" accept=".json" onChange={handleQuizUpload} className="hidden" id="quiz-upload" />
-                  <label htmlFor="quiz-upload">
-                    <Button
-                      className="w-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/40 px-8 py-3 text-lg"
-                      asChild
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        <Upload size={20} />
-                        Upload Your Quiz
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-
-                {uploadStatus && <p className="text-white text-sm animate-pulse">{uploadStatus}</p>}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-12 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-          <h3 className="text-2xl font-bold text-white mb-4">How It Works</h3>
-          <div className="grid md:grid-cols-2 gap-6 text-white/90">
-            <div>
-              <h4 className="font-bold text-[#01ADEF] mb-2">Galaxy Explorer:</h4>
-              <ul className="space-y-2 text-sm leading-relaxed">
-                <li>• Click icons to visit customer websites or take quizzes</li>
-                <li>• Click portals (⚡) to discover deeper content</li>
-                <li>• Use "Explore More" to travel to new levels</li>
-                <li>• Previous and upper levels visible in distance</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-[#ffd700] mb-2">English Quiz:</h4>
-              <ul className="space-y-2 text-sm leading-relaxed">
-                <li>• Upload JSON with vocabulary data</li>
-                <li>• Listen to examples with text-to-speech</li>
-                <li>• Type correct spelling to earn points</li>
-                <li>• 5-minute timer with background music</li>
-              </ul>
-            </div>
-          </div>
+      {/* Centered chat box */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 p-6">
+          <h1 className="text-2xl font-bold text-[#08075C] mb-4 text-center">AI chat box</h1>
+          <StarWarsChat messages={messages} isTyping={false} showControls={false} />
         </div>
       </div>
     </div>
