@@ -7,7 +7,7 @@
     "dev": "next dev",
     "dev:server": "node app.js",
     "lint": "next lint",
-    "start": "node app.js"
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
