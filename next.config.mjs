@@ -9,6 +9,23 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Configure webpack to avoid eval usage in production
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Disable eval-based source maps in production
+      config.devtool = 'source-map';
+      
+      // Ensure webpack doesn't use eval for code splitting
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          chunks: 'all',
+        },
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {
@@ -16,10 +33,10 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            // TEMP: allow 'unsafe-eval' to unblock production while we locate offending code
+            // Secure CSP without unsafe-eval
             value: [
               "default-src 'self'", 
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https:",
+              "script-src 'self' 'unsafe-inline' https:",
               "style-src 'self' 'unsafe-inline' https:",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https:",
