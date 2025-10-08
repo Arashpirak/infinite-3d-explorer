@@ -53,7 +53,7 @@
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch("https://factoryab.ir/api/quote", {
+      const res = await fetch("/api/quote", {
         method: "POST", // Use POST to send custom prompt
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt || "Give me one short motivational quote." }), // Default prompt if empty
