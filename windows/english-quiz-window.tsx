@@ -211,7 +211,7 @@ export function EnglishQuizWindow({ onContinue, jsonFilePath, onLockNavigation }
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-8 max-w-3xl mx-auto" dir="ltr">
       <h2 className="text-3xl font-bold text-[#08075C] mb-6 text-center">English Vocabulary Quiz</h2>
 
       {!isQuizStarted && !isQuizFinished && (

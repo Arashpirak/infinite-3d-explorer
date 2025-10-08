@@ -155,25 +155,14 @@ export default function PathwayPage() {
   }
 
   useEffect(() => {
+    // Disable scroll-based navigation entirely
     const handleWheelEvent = (e: WheelEvent) => {
-      if (isNavigationLocked) return
-
-      e.preventDefault()
-
-      if (isTransitioning) return
-
-      const currentIndex = visibleWindows.findIndex((w) => w.id === currentWindowId)
-
-      if (e.deltaY > 0 && currentIndex < visibleWindows.length - 1) {
-        navigateToWindow(visibleWindows[currentIndex + 1].id)
-      } else if (e.deltaY < 0 && currentIndex > 0) {
-        navigateToWindow(visibleWindows[currentIndex - 1].id)
-      }
+      return
     }
 
-    window.addEventListener("wheel", handleWheelEvent, { passive: false })
+    window.addEventListener("wheel", handleWheelEvent, { passive: true })
     return () => window.removeEventListener("wheel", handleWheelEvent)
-  }, [currentWindowId, isTransitioning, visibleWindows, isNavigationLocked])
+  }, [])
 
   const currentWindow = visibleWindows.find((w) => w.id === currentWindowId)
   const CurrentWindowComponent = currentWindow?.component
@@ -435,7 +424,7 @@ export default function PathwayPage() {
       {/* Navigation Hint */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
         <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
-          Use arrows or scroll • Click windows to navigate • 🔒 = Sign in required
+          از دکمه‌های کناری یا کلیک روی پنجره‌ها استفاده کنید • 🔒 = نیازمند ورود
         </div>
       </div>
 
