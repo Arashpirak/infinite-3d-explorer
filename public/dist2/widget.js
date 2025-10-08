@@ -1,4 +1,16 @@
 (function () {
+  // Determine the base origin of the widget host (where this script is served from)
+  const thisScript = document.currentScript || (function() {
+    const scripts = document.getElementsByTagName('script');
+    return scripts[scripts.length - 1];
+  })();
+  let baseOrigin;
+  try {
+    const url = new URL(thisScript && thisScript.src ? thisScript.src : window.location.href);
+    baseOrigin = url.origin;
+  } catch (e) {
+    baseOrigin = window.location.origin;
+  }
   // Create widget container
   const widget = document.createElement("div");
   widget.style.position = "fixed";
@@ -53,7 +65,7 @@
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch("/api/quote", {
+      const res = await fetch(baseOrigin + "/api/quote", {
         method: "POST", // Use POST to send custom prompt
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt || "Give me one short motivational quote." }), // Default prompt if empty
