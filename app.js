@@ -4,6 +4,7 @@ const next = require('next');
 const path = require('path');
 const fs = require('fs').promises;
 const cors = require('cors');
+const { fetchGeminiQuote } = require('./gemini');
 
 if (typeof fetch === "undefined") {
   global.fetch = require("node-fetch");
@@ -89,67 +90,25 @@ app.prepare().then(() => {
               return;
             }
 
-            // Make request to Gemini API
-            const response = await fetchWithTimeout(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{ parts: [{ text: prompt }] }],
-                }),
-                timeout: 15000,
-              }
-            );
-
-            if (!response.ok) {
-              console.error(`Gemini API error: ${response.status} ${response.statusText}`);
-              res.statusCode = response.status;
+            // Use fallback-capable helper (Gemini first, then OpenRouter)
+            const result = await fetchGeminiQuote(prompt);
+            if (result?.error) {
+              res.statusCode = 502;
               res.setHeader("Content-Type", "application/json");
-              res.end(
-                JSON.stringify({
-                  error: true,
-                  status: response.status,
-                  message: "Gemini API returned an error",
-                })
-              );
+              res.end(JSON.stringify({ error: true, message: "All providers failed", details: result }));
               return;
             }
-
-            let data;
-            try {
-              data = await response.json();
-            } catch (parseErr) {
-              console.error("Failed to parse Gemini response:", parseErr);
-              res.statusCode = 500;
-              res.setHeader("Content-Type", "application/json");
-              res.end(
-                JSON.stringify({
-                  error: true,
-                  message: "Invalid JSON from Gemini API",
-                })
-              );
-              return;
-            }
-
-            if (process.env.NODE_ENV !== "production") {
-              console.log("Gemini raw response:", JSON.stringify(data, null, 2));
-            }
-
-            const quote =
-              data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-              "Stay motivated! (fallback)";
 
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ quote }));
+            res.end(JSON.stringify({ quote: result?.quote || "Stay motivated! (fallback)" }));
           } catch (err) {
-            console.error("Gemini request failed:", err);
+            console.error("Quote request failed:", err);
             res.statusCode = 500;
             res.setHeader("Content-Type", "application/json");
             res.end(
               JSON.stringify({
                 error: true,
-                message: "Server error while calling Gemini API",
+                message: "Server error while generating quote",
                 details: err.message,
               })
             );
