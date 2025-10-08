@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  email     String?
+  name      String?
+  status    String   @default("active") // active, suspended, deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sessions     Session[]
+  phoneOtps    PhoneOtp[]
+  englishExams EnglishExam[]
+  invites      Invite[]
+  chatbotProjects ChatbotProject[]
+  billingCustomer BillingCustomer?
+
+  @@map("users")
+}
+
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  userId    String?
+  phone     String
+  otpHash   String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  sentChannel String @default("sms") // sms, voice
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("phone_otps")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model EnglishExam {
+  id        String   @id @default(cuid())
+  userId    String
+  examType  String   // vocabulary, grammar, etc.
+  status    String   @default("pending") // pending, completed, failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores ExamScore[]
+
+  @@map("english_exams")
+}
+
+model ExamScore {
+  id        String   @id @default(cuid())
+  examId    String
+  score     Int
+  breakdown Json?    // Detailed score breakdown
+  history   Json?    // Quiz history and mistakes
+  createdAt DateTime @default(now())
+
+  // Relations
+  exam EnglishExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@map("exam_scores")
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @unique
+  uses      Int      @default(0)
+  maxUses   Int      @default(1)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("invites")
+}
+
+model ChatbotProject {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  name        String
+  domain      String?
+  apiKeyHash  String
+  plan        String   @default("free") // free, basic, pro, enterprise
+  status      String   @default("active") // active, suspended, deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner     User        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  apiUsage  ApiUsage[]
+  subscription Subscription?
+
+  @@map("chatbot_projects")
+}
+
+model ApiUsage {
+  id        String   @id @default(cuid())
+  projectId String
+  endpoint  String
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  cost      Decimal  @default(0) @db.Decimal(10, 6)
+  timestamp DateTime @default(now())
+
+  // Relations
+  project ChatbotProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("api_usage")
+}
+
+model BillingCustomer {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  stripeCustomerId  String?  @unique
+  taxInfo           Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription?
+
+  @@map("billing_customers")
+}
+
+model Subscription {
+  id         String   @id @default(cuid())
+  customerId String   @unique
+  projectId  String?  @unique
+  plan       String
+  status     String   // active, canceled, past_due, etc.
+  period     String   // monthly, yearly
+  renewAt    DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  customer BillingCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  project  ChatbotProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@map("subscriptions")
+}
