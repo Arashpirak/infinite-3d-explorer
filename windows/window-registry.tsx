@@ -19,8 +19,8 @@ export interface WindowConfig {
 export const WINDOW_REGISTRY: WindowConfig[] = [
   {
     id: "sign-in",
-    title: "Sign In",
-    description: "Welcome & Authentication",
+    title: "ورود",
+    description: "خوش‌آمدگویی و احراز هویت",
     component: SignInWindow,
     initialPosition: { x: -45, y: 15, scale: 1.0, depth: 0 },
     unlocked: true,
@@ -36,8 +36,8 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
   },
   {
     id: "chatbox",
-    title: "AI Chat",
-    description: "Conversation with Arash",
+    title: "گفتگو با هوش مصنوعی",
+    description: "گفتگو با آرش",
     component: ChatboxWindow,
     initialPosition: { x: 45, y: 8, scale: 0.8, depth: 0.5 },
     unlocked: true,
@@ -53,14 +53,14 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
   },
   {
     id: "how-we-help",
-    title: "How We Help",
-    description: "24/7 Voice-Powered Customer Support",
+    title: "چگونه کمک می‌کنیم",
+    description: "پشتیبانی مشتری ۲۴/۷ با قدرت صدا",
     component: ({ onContinue }) => (
       <div className="text-center p-8">
-        <h2 className="text-3xl font-bold text-[#08075C] mb-6">How We Help</h2>
-        <p className="text-gray-700 mb-6">24/7 Voice-Powered Customer Support</p>
+        <h2 className="text-3xl font-bold text-[#08075C] mb-6">چگونه کمک می‌کنیم</h2>
+        <p className="text-gray-700 mb-6">پشتیبانی مشتری ۲۴/۷ با استفاده از صدا</p>
         <button onClick={onContinue} className="bg-[#01ADEF] text-white px-6 py-2 rounded">
-          Continue
+          ادامه
         </button>
       </div>
     ),
@@ -69,14 +69,14 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
   },
   {
     id: "features",
-    title: "Features",
-    description: "Advanced AI Conversation Capabilities",
+    title: "ویژگی‌ها",
+    description: "قابلیت‌های پیشرفته گفتگو با هوش مصنوعی",
     component: ({ onContinue }) => (
       <div className="text-center p-8">
-        <h2 className="text-3xl font-bold text-[#08075C] mb-6">Features</h2>
-        <p className="text-gray-700 mb-6">Advanced AI Conversation Capabilities</p>
+        <h2 className="text-3xl font-bold text-[#08075C] mb-6">ویژگی‌ها</h2>
+        <p className="text-gray-700 mb-6">قابلیت‌های پیشرفته مکالمه با هوش مصنوعی</p>
         <button onClick={onContinue} className="bg-[#01ADEF] text-white px-6 py-2 rounded">
-          Continue
+          ادامه
         </button>
       </div>
     ),
@@ -85,14 +85,14 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
   },
   {
     id: "pricing",
-    title: "Pricing Plans",
-    description: "Flexible Solutions for Every Business",
+    title: "پلن‌های قیمت‌گذاری",
+    description: "راهکارهای انعطاف‌پذیر برای هر کسب‌وکار",
     component: ({ onContinue }) => (
       <div className="text-center p-8">
-        <h2 className="text-3xl font-bold text-[#08075C] mb-6">Pricing Plans</h2>
-        <p className="text-gray-700 mb-6">Flexible Solutions for Every Business</p>
+        <h2 className="text-3xl font-bold text-[#08075C] mb-6">پلن‌های قیمت‌گذاری</h2>
+        <p className="text-gray-700 mb-6">راهکارهای منعطف برای هر کسب‌وکار</p>
         <button onClick={onContinue} className="bg-[#01ADEF] text-white px-6 py-2 rounded">
-          Continue
+          ادامه
         </button>
       </div>
     ),
@@ -101,14 +101,14 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
   },
   {
     id: "get-started",
-    title: "Get Started",
-    description: "WordPress Plugin & Custom Integration",
+    title: "شروع کنید",
+    description: "افزونه وردپرس و یکپارچه‌سازی سفارشی",
     component: ({ onContinue }) => (
       <div className="text-center p-8">
-        <h2 className="text-3xl font-bold text-[#08075C] mb-6">Get Started</h2>
-        <p className="text-gray-700 mb-6">WordPress Plugin & Custom Integration</p>
+        <h2 className="text-3xl font-bold text-[#08075C] mb-6">شروع کنید</h2>
+        <p className="text-gray-700 mb-6">افزونه وردپرس و یکپارچه‌سازی سفارشی</p>
         <button onClick={onContinue} className="bg-[#01ADEF] text-white px-6 py-2 rounded">
-          Continue
+          ادامه
         </button>
       </div>
     ),
