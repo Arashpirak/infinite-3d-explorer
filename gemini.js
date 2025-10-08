@@ -25,7 +25,7 @@ async function fetchWithTimeout(resource, options, retries = 3, delay = 1000) {
 }
 
 // Fallback: Fetch quote from OpenRouter
-async function fetchOpenRouterQuote(prompt) {
+async function fetchOpenRouterQuote(prompt, options = {}) {
   try {
     // Single default model (uncomment this for simple fallback)
     const model = "deepseek/deepseek-chat-v3-0324:free";
@@ -35,7 +35,7 @@ async function fetchOpenRouterQuote(prompt) {
     const freeModels = [
       "deepseek/deepseek-chat-v3-0324:free",  // Fast, reliable free model
       "meta-llama/llama-3.1-8b-instruct:free",  // Llama alternative
-      "google/gemini-flash-1.5-exp:free"  // Gemini-like free tier (if available)
+      "google/gemini-2.5.pro:free"  // Gemini-like free tier (if available)
     ];
     const model = freeModels[Math.floor(Math.random() * freeModels.length)];
     */
@@ -53,12 +53,17 @@ async function fetchOpenRouterQuote(prompt) {
       "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://factoryab.ir",
-          "X-Title": "Daily Motivation Widget"
-        },
+        headers: (() => {
+          const headers = {
+            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json"
+          };
+          const referer = options.referer || process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_SITE_URL;
+          const title = options.title || process.env.OPENROUTER_TITLE || "Daily Motivation Widget";
+          if (referer) headers["HTTP-Referer"] = referer;
+          if (title) headers["X-Title"] = title;
+          return headers;
+        })(),
         body: requestBody,
         timeout: 15000,
       },
@@ -106,7 +111,7 @@ async function fetchOpenRouterQuote(prompt) {
 }
 
 // Primary function: Try Gemini first, fallback to OpenRouter on error
-async function fetchGeminiQuote(prompt) {
+async function fetchGeminiQuote(prompt, options = {}) {
   try {
     const requestBody = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
@@ -129,7 +134,7 @@ async function fetchGeminiQuote(prompt) {
       const errorText = await response.text();
       console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorText);
       console.log("Gemini failed, falling back to OpenRouter...");
-      return await fetchOpenRouterQuote(prompt);
+      return await fetchOpenRouterQuote(prompt, options);
     }
 
     let data;
@@ -138,7 +143,7 @@ async function fetchGeminiQuote(prompt) {
     } catch (parseErr) {
       console.error("Failed to parse Gemini response:", parseErr);
       console.log("Gemini parsing failed, falling back to OpenRouter...");
-      return await fetchOpenRouterQuote(prompt);
+      return await fetchOpenRouterQuote(prompt, options);
     }
 
     if (process.env.NODE_ENV !== "production") {
@@ -153,7 +158,7 @@ async function fetchGeminiQuote(prompt) {
   } catch (err) {
     console.error("Gemini request failed:", err);
     console.log("Gemini overall failed, falling back to OpenRouter...");
-    return await fetchOpenRouterQuote(prompt);
+    return await fetchOpenRouterQuote(prompt, options);
   }
 }
 

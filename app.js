@@ -15,9 +15,16 @@ const app = next({ dev, dir: __dirname });
 const handle = app.getRequestHandler();
 const PORT = process.env.PORT || 10000;
 
-// CORS middleware
+// CORS middleware (dynamic)
+const allowedOrigins = (process.env.CORS_ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 const corsMiddleware = cors({
-  origin: ['https://www.atiradco.com', 'http://localhost:3000'], // Add allowed origins
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 });
@@ -91,7 +98,8 @@ app.prepare().then(() => {
             }
 
             // Use fallback-capable helper (Gemini first, then OpenRouter)
-            const result = await fetchGeminiQuote(prompt);
+            const origin = req.headers['origin'] || process.env.NEXT_PUBLIC_SITE_URL || undefined;
+            const result = await fetchGeminiQuote(prompt, { referer: origin, title: process.env.OPENROUTER_TITLE });
             if (result?.error) {
               res.statusCode = 502;
               res.setHeader("Content-Type", "application/json");
