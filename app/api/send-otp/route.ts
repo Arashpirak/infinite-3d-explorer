@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getSMSService } from '@/lib/sms-service'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 
@@ -77,8 +78,23 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    // In production, send SMS here using a service like Kavenegar, Ippanel, etc.
-    console.log(`OTP for ${mobile}: ${otp}`) // Remove this in production
+    // Send SMS using Melipayamak service
+    try {
+      const smsService = getSMSService()
+      const smsResult = await smsService.sendOTP(mobile, otp)
+      
+      if (!smsResult.success) {
+        console.error('SMS sending failed:', smsResult.error)
+        // Still return success to user but log the error
+        // In production, you might want to handle this differently
+      } else {
+        console.log(`SMS sent successfully to ${mobile}, Message ID: ${smsResult.messageId}`)
+      }
+    } catch (error) {
+      console.error('SMS service error:', error)
+      // Continue with the flow even if SMS fails
+      // In production, you might want to handle this differently
+    }
     
     return NextResponse.json({
       success: true,

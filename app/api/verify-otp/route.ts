@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateToken } from '@/lib/auth'
+import { getSMSService } from '@/lib/sms-service'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
@@ -86,6 +87,20 @@ export async function POST(request: NextRequest) {
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
         }
       })
+      
+      // Send welcome SMS to new user
+      try {
+        const smsService = getSMSService()
+        const welcomeResult = await smsService.sendWelcomeMessage(mobile)
+        if (welcomeResult.success) {
+          console.log(`Welcome SMS sent successfully to ${mobile}`)
+        } else {
+          console.error('Welcome SMS failed:', welcomeResult.error)
+        }
+      } catch (error) {
+        console.error('Welcome SMS service error:', error)
+        // Don't fail the registration if welcome SMS fails
+      }
     }
     
     // Create session token

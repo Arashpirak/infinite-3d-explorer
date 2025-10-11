@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getSMSService } from '@/lib/sms-service'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
@@ -93,8 +94,23 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    // In production, send SMS here
-    console.log(`Password reset OTP for ${mobile}: ${otp}`) // Remove this in production
+    // Send SMS using Melipayamak service
+    try {
+      const smsService = getSMSService()
+      const smsResult = await smsService.sendPasswordResetOTP(mobile, otp)
+      
+      if (!smsResult.success) {
+        console.error('Password reset SMS sending failed:', smsResult.error)
+        // Still return success to user but log the error
+        // In production, you might want to handle this differently
+      } else {
+        console.log(`Password reset SMS sent successfully to ${mobile}, Message ID: ${smsResult.messageId}`)
+      }
+    } catch (error) {
+      console.error('Password reset SMS service error:', error)
+      // Continue with the flow even if SMS fails
+      // In production, you might want to handle this differently
+    }
     
     return NextResponse.json({
       success: true,
