@@ -1,0 +1,35 @@
+# Copy this content to create your .env.local file
+# In your project root directory, create a file named .env.local and paste this content:
+
+# Database Configuration
+DATABASE_URL="your_database_url_here"
+
+# Melipayamak SMS Service Configuration
+MELIPAYAMAK_USERNAME="your_melipayamak_username"
+MELIPAYAMAK_PASSWORD="your_melipayamak_password"
+MELIPAYAMAK_FROM="5000****"
+
+# JWT Secret for User Authentication (Generate a secure random string)
+JWT_SECRET="your_very_secure_random_string_here"
+
+# Next.js Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_nextauth_secret_here"
+
+# Node Environment
+NODE_ENV="development"
+
+# ===========================================
+# INSTRUCTIONS:
+# ===========================================
+# 1. Create a file named .env.local in your project root
+# 2. Copy the content above (without the comments and instructions)
+# 3. Replace the placeholder values with your actual values:
+#    - DATABASE_URL: Your database connection string
+#    - MELIPAYAMAK_USERNAME: Your Melipayamak username
+#    - MELIPAYAMAK_PASSWORD: Your Melipayamak password
+#    - MELIPAYAMAK_FROM: Your registered sender number (like 5000****)
+#    - JWT_SECRET: Generate a secure random string (use online generator)
+#    - NEXTAUTH_SECRET: Generate another secure random string
+# 4. Save the file
+# 5. Restart your development server
