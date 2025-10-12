@@ -23,10 +23,10 @@ export function ChatboxWindow({ onContinue }: ChatboxWindowProps) {
   }, [])
 
   return (
-    <div className="text-center p-8 max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-[#08075C] mb-6">AI Conversation</h2>
+    <div className="text-center p-4 max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold text-[#08075C] mb-4">گفتگوی هوشمند</h2>
 
-      <div className="mb-6">
+      <div className="mb-4">
         <EnhancedChat 
           messages={messages} 
           isTyping={isTyping}
@@ -40,18 +40,18 @@ export function ChatboxWindow({ onContinue }: ChatboxWindowProps) {
         />
       </div>
 
-      <div className="bg-gradient-to-r from-[#01ADEF]/10 to-[#08075C]/10 rounded-2xl p-4 border border-[#01ADEF]/20">
+      <div className="bg-gradient-to-r from-[#01ADEF]/10 to-[#08075C]/10 rounded-2xl p-3 border border-[#01ADEF]/20">
         <p className="text-[#08075C] mb-2">
-          <strong>Chat with Arash</strong> - Your AI assistant powered by Gemini
+          <strong>گفتگو با آرش</strong> - دستیار هوشمند شما با قدرت Gemini
         </p>
         <p className="text-[#01ADEF] text-sm">
-          Type your message or use the microphone to speak. Your conversation history is saved.
+          پیام خود را تایپ کنید یا از میکروفون استفاده کنید. تاریخچه گفتگو ذخیره می‌شود.
         </p>
       </div>
 
       {messages.length > 1 && (
-        <Button onClick={onContinue} className="mt-6 bg-[#01ADEF] hover:bg-[#0194D1] text-white">
-          Continue Journey
+        <Button onClick={onContinue} className="mt-4 bg-[#01ADEF] hover:bg-[#0194D1] text-white">
+          ادامه سفر
         </Button>
       )}
     </div>

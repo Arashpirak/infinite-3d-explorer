@@ -86,14 +86,14 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
       } else {
         // Handle error
         conversationStore.addMessage(
-          "Sorry, I'm having trouble responding right now. Please try again.",
+          "متأسفانه در حال حاضر مشکل دارم. لطفاً دوباره تلاش کنید.",
           "ai"
         )
       }
     } catch (error) {
       console.error('Error sending message:', error)
       conversationStore.addMessage(
-        "Sorry, I'm having trouble connecting. Please check your internet connection and try again.",
+        "متأسفانه در اتصال مشکل دارم. لطفاً اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.",
         "ai"
       )
     } finally {
@@ -130,13 +130,13 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-lg mx-auto">
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
         {/* Chat Header */}
         <div className="bg-gradient-to-r from-[#08075C] to-[#01ADEF] p-4 text-white flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold">AI Assistant - Arash</h3>
-            <p className="text-sm text-white/80">Your intelligent conversation partner</p>
+            <h3 className="text-lg font-semibold">دستیار هوشمند - آرش</h3>
+            <p className="text-sm text-white/80">شریک گفتگوی هوشمند شما</p>
           </div>
           {messages.length > 0 && (
             <Button
@@ -151,12 +151,12 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
         </div>
 
         {/* Messages Container */}
-        <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        <div className="h-64 overflow-y-auto p-4 space-y-4 bg-gray-50">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
-                <p className="text-lg mb-2">👋 Hello! I'm Arash, your AI assistant.</p>
-                <p className="text-sm">Start a conversation by typing or speaking...</p>
+                <p className="text-lg mb-2">👋 سلام! من آرش هستم، دستیار هوشمند شما.</p>
+                <p className="text-sm">با تایپ کردن یا صحبت کردن گفتگو را شروع کنید...</p>
               </div>
             </div>
           ) : (
@@ -213,7 +213,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder="پیام خود را تایپ کنید..."
                 disabled={isProcessing}
                 className="pr-12"
               />
@@ -240,7 +240,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
             </Button>
           </div>
           <p className="text-xs text-gray-500 mt-2 text-center">
-            💬 Type your message or click the microphone to speak
+            💬 پیام خود را تایپ کنید یا روی میکروفون کلیک کنید تا صحبت کنید
           </p>
         </div>
       </div>
