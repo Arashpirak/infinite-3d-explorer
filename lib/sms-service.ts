@@ -26,21 +26,32 @@ class SMSService {
       // Persian SMS message for OTP
       const message = `کد تأیید شما: ${otp}\nاین کد تا ۵ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
       
+      const requestBody = {
+        username: this.config.username,
+        password: this.config.password,
+        to: formattedPhone,
+        from: this.config.from,
+        text: message,
+      }
+
+      console.log('SMS Request:', {
+        url: 'https://rest.payamak-panel.com/api/SendSMS/SendSMS',
+        body: requestBody
+      })
+
       const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: this.config.username,
-          password: this.config.password,
-          to: formattedPhone,
-          from: this.config.from,
-          text: message,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      console.log('SMS Response Status:', response.status)
+      console.log('SMS Response Headers:', Object.fromEntries(response.headers.entries()))
+
       const data = await response.json()
+      console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
         return {
@@ -72,21 +83,32 @@ class SMSService {
       // Persian SMS message for password reset
       const message = `کد تأیید برای تغییر رمز عبور: ${otp}\nاین کد تا ۱۰ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
       
+      const requestBody = {
+        username: this.config.username,
+        password: this.config.password,
+        to: formattedPhone,
+        from: this.config.from,
+        text: message,
+      }
+
+      console.log('SMS Request:', {
+        url: 'https://rest.payamak-panel.com/api/SendSMS/SendSMS',
+        body: requestBody
+      })
+
       const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: this.config.username,
-          password: this.config.password,
-          to: formattedPhone,
-          from: this.config.from,
-          text: message,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      console.log('SMS Response Status:', response.status)
+      console.log('SMS Response Headers:', Object.fromEntries(response.headers.entries()))
+
       const data = await response.json()
+      console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
         return {
@@ -119,21 +141,32 @@ class SMSService {
         ? `سلام ${userName} عزیز!\nبه سرویس ما خوش آمدید.`
         : 'به سرویس ما خوش آمدید!'
       
+      const requestBody = {
+        username: this.config.username,
+        password: this.config.password,
+        to: formattedPhone,
+        from: this.config.from,
+        text: message,
+      }
+
+      console.log('SMS Request:', {
+        url: 'https://rest.payamak-panel.com/api/SendSMS/SendSMS',
+        body: requestBody
+      })
+
       const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          username: this.config.username,
-          password: this.config.password,
-          to: formattedPhone,
-          from: this.config.from,
-          text: message,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      console.log('SMS Response Status:', response.status)
+      console.log('SMS Response Headers:', Object.fromEntries(response.headers.entries()))
+
       const data = await response.json()
+      console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
         return {
