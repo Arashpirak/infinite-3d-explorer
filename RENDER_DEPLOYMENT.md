@@ -18,9 +18,9 @@ Set these environment variables in your Render dashboard:
 DATABASE_URL="your_database_url_here"
 
 # Melipayamak SMS Service Configuration
-MELIPAYAMAK_USERNAME="your_melipayamak_username"
-MELIPAYAMAK_PASSWORD="your_melipayamak_password"
-MELIPAYAMAK_FROM="5000****"
+MP_USERNAME="your_melipayamak_username"
+MP_PASSWORD="your_melipayamak_password"
+MP_FROM="5000****"
 
 # AI Services Configuration
 GEMINI_API_KEY="your_gemini_api_key_here"

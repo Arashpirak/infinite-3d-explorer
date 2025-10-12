@@ -1,5 +1,3 @@
-import MelipayamakApi from 'melipayamak'
-
 interface SMSConfig {
   username: string
   password: string
@@ -10,15 +8,14 @@ interface SMSResult {
   success: boolean
   messageId?: string
   error?: string
+  details?: any
 }
 
 class SMSService {
-  private api: MelipayamakApi
-  private from: string
+  private config: SMSConfig
 
   constructor(config: SMSConfig) {
-    this.api = new MelipayamakApi(config.username, config.password)
-    this.from = config.from
+    this.config = config
   }
 
   async sendOTP(phoneNumber: string, otp: string): Promise<SMSResult> {
@@ -29,24 +26,41 @@ class SMSService {
       // Persian SMS message for OTP
       const message = `کد تأیید شما: ${otp}\nاین کد تا ۵ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
       
-      const response = await this.api.send(formattedPhone, this.from, message)
+      const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: this.config.username,
+          password: this.config.password,
+          to: formattedPhone,
+          from: this.config.from,
+          text: message,
+        }),
+      })
+
+      const data = await response.json()
       
-      if (response && response.RetStatus === 1) {
+      if (response.ok && data) {
         return {
           success: true,
-          messageId: response.StrRetStatus
+          messageId: data.toString(),
+          details: data
         }
       } else {
         return {
           success: false,
-          error: response?.StrRetStatus || 'خطا در ارسال پیامک'
+          error: 'خطا در ارسال پیامک',
+          details: data
         }
       }
     } catch (error) {
       console.error('SMS sending error:', error)
       return {
         success: false,
-        error: 'خطا در ارتباط با سرویس پیامک'
+        error: 'خطا در ارتباط با سرویس پیامک',
+        details: error
       }
     }
   }
@@ -58,24 +72,41 @@ class SMSService {
       // Persian SMS message for password reset
       const message = `کد تأیید برای تغییر رمز عبور: ${otp}\nاین کد تا ۱۰ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
       
-      const response = await this.api.send(formattedPhone, this.from, message)
+      const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: this.config.username,
+          password: this.config.password,
+          to: formattedPhone,
+          from: this.config.from,
+          text: message,
+        }),
+      })
+
+      const data = await response.json()
       
-      if (response && response.RetStatus === 1) {
+      if (response.ok && data) {
         return {
           success: true,
-          messageId: response.StrRetStatus
+          messageId: data.toString(),
+          details: data
         }
       } else {
         return {
           success: false,
-          error: response?.StrRetStatus || 'خطا در ارسال پیامک'
+          error: 'خطا در ارسال پیامک',
+          details: data
         }
       }
     } catch (error) {
       console.error('Password reset SMS sending error:', error)
       return {
         success: false,
-        error: 'خطا در ارتباط با سرویس پیامک'
+        error: 'خطا در ارتباط با سرویس پیامک',
+        details: error
       }
     }
   }
@@ -88,24 +119,41 @@ class SMSService {
         ? `سلام ${userName} عزیز!\nبه سرویس ما خوش آمدید.`
         : 'به سرویس ما خوش آمدید!'
       
-      const response = await this.api.send(formattedPhone, this.from, message)
+      const response = await fetch('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: this.config.username,
+          password: this.config.password,
+          to: formattedPhone,
+          from: this.config.from,
+          text: message,
+        }),
+      })
+
+      const data = await response.json()
       
-      if (response && response.RetStatus === 1) {
+      if (response.ok && data) {
         return {
           success: true,
-          messageId: response.StrRetStatus
+          messageId: data.toString(),
+          details: data
         }
       } else {
         return {
           success: false,
-          error: response?.StrRetStatus || 'خطا در ارسال پیامک'
+          error: 'خطا در ارسال پیامک',
+          details: data
         }
       }
     } catch (error) {
       console.error('Welcome SMS sending error:', error)
       return {
         success: false,
-        error: 'خطا در ارتباط با سرویس پیامک'
+        error: 'خطا در ارتباط با سرویس پیامک',
+        details: error
       }
     }
   }
@@ -117,13 +165,13 @@ let smsService: SMSService | null = null
 export function getSMSService(): SMSService {
   if (!smsService) {
     const config: SMSConfig = {
-      username: process.env.MELIPAYAMAK_USERNAME || '',
-      password: process.env.MELIPAYAMAK_PASSWORD || '',
-      from: process.env.MELIPAYAMAK_FROM || '5000****' // Default sender number
+      username: process.env.MP_USERNAME || '',
+      password: process.env.MP_PASSWORD || '',
+      from: process.env.MP_FROM || '5000****' // Default sender number
     }
     
     if (!config.username || !config.password) {
-      throw new Error('Melipayamak credentials not configured. Please set MELIPAYAMAK_USERNAME and MELIPAYAMAK_PASSWORD environment variables.')
+      throw new Error('Melipayamak credentials not configured. Please set MP_USERNAME and MP_PASSWORD environment variables.')
     }
     
     smsService = new SMSService(config)
