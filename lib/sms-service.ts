@@ -54,24 +54,29 @@ class SMSService {
       console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
+        console.log('✅ SMS sent successfully!')
         return {
           success: true,
           messageId: data.toString(),
-          details: data
+          details: data,
+          message: 'پیامک با موفقیت ارسال شد'
         }
       } else {
+        console.log('❌ SMS sending failed:', data)
         return {
           success: false,
           error: 'خطا در ارسال پیامک',
-          details: data
+          details: data,
+          message: 'خطا در ارسال پیامک: ' + (data?.message || 'نامشخص')
         }
       }
     } catch (error) {
-      console.error('SMS sending error:', error)
+      console.error('❌ SMS sending error:', error)
       return {
         success: false,
         error: 'خطا در ارتباط با سرویس پیامک',
-        details: error
+        details: error,
+        message: 'خطا در ارتباط با سرویس پیامک: ' + (error instanceof Error ? error.message : 'نامشخص')
       }
     }
   }
@@ -111,16 +116,20 @@ class SMSService {
       console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
+        console.log('✅ SMS sent successfully!')
         return {
           success: true,
           messageId: data.toString(),
-          details: data
+          details: data,
+          message: 'پیامک با موفقیت ارسال شد'
         }
       } else {
+        console.log('❌ SMS sending failed:', data)
         return {
           success: false,
           error: 'خطا در ارسال پیامک',
-          details: data
+          details: data,
+          message: 'خطا در ارسال پیامک: ' + (data?.message || 'نامشخص')
         }
       }
     } catch (error) {
@@ -169,16 +178,20 @@ class SMSService {
       console.log('SMS Response Data:', data)
       
       if (response.ok && data) {
+        console.log('✅ SMS sent successfully!')
         return {
           success: true,
           messageId: data.toString(),
-          details: data
+          details: data,
+          message: 'پیامک با موفقیت ارسال شد'
         }
       } else {
+        console.log('❌ SMS sending failed:', data)
         return {
           success: false,
           error: 'خطا در ارسال پیامک',
-          details: data
+          details: data,
+          message: 'خطا در ارسال پیامک: ' + (data?.message || 'نامشخص')
         }
       }
     } catch (error) {

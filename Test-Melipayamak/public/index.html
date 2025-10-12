@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <title>ارسال پیامک تستی</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      direction: rtl;
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1976d2;
+    }
+    #result {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3>📤 ارسال پیامک تستی</h3>
+    <input id="to" type="text" placeholder="شماره گیرنده (مثلاً 0912...)" />
+    <textarea id="text" placeholder="متن پیام"></textarea>
+    <button onclick="sendSMS()">ارسال پیامک</button>
+    <button onclick="testCredentials()" style="background-color: #4caf50; margin-top: 5px;">تست اعتبارنامه‌ها</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function sendSMS() {
+      const to = document.getElementById('to').value.trim();
+      const text = document.getElementById('text').value.trim();
+      const result = document.getElementById('result');
+
+      if (!to || !text) {
+        result.innerHTML = "⚠️ لطفاً شماره و متن را وارد کنید.";
+        return;
+      }
+
+      result.innerHTML = "⏳ در حال ارسال...";
+
+      try {
+        const res = await fetch("/send-sms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to, text }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          result.innerHTML = "✅ پیامک با موفقیت ارسال شد.";
+        } else {
+          result.innerHTML = "❌ خطا در ارسال پیام: " + (data.error || "نامشخص") + 
+            (data.details ? "<br>جزئیات: " + JSON.stringify(data.details) : "");
+        }
+      } catch (err) {
+        result.innerHTML = "⚠️ خطای ارتباط با سرور.";
+      }
+    }
+
+    async function testCredentials() {
+      const result = document.getElementById('result');
+      result.innerHTML = "⏳ در حال تست اعتبارنامه‌ها...";
+
+      try {
+        const res = await fetch("/test-credentials");
+        const data = await res.json();
+        
+        if (data.success) {
+          result.innerHTML = "✅ اعتبارنامه‌ها معتبر هستند!<br>" +
+            "کاربر: " + data.credentials.username + "<br>" +
+            "شماره فرستنده: " + data.credentials.from + "<br>" +
+            "اعتبار: " + JSON.stringify(data.credit);
+        } else {
+          result.innerHTML = "❌ خطا در اعتبارنامه‌ها: " + (data.error || "نامشخص") +
+            (data.details ? "<br>جزئیات: " + JSON.stringify(data.details) : "");
+        }
+      } catch (err) {
+        result.innerHTML = "⚠️ خطای ارتباط با سرور.";
+      }
+    }
+  </script>
+</body>
+</html>

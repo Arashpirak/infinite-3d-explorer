@@ -84,14 +84,17 @@ export async function POST(request: NextRequest) {
       const smsResult = await smsService.sendOTP(mobile, otp)
       
       if (!smsResult.success) {
-        console.error('SMS sending failed:', smsResult.error)
+        console.error('❌ SMS sending failed:', smsResult.error)
+        console.error('SMS Details:', smsResult.details)
         // Still return success to user but log the error
         // In production, you might want to handle this differently
       } else {
-        console.log(`SMS sent successfully to ${mobile}, Message ID: ${smsResult.messageId}`)
+        console.log(`✅ SMS sent successfully to ${mobile}`)
+        console.log('SMS Message ID:', smsResult.messageId)
+        console.log('SMS Details:', smsResult.details)
       }
     } catch (error) {
-      console.error('SMS service error:', error)
+      console.error('❌ SMS service error:', error)
       // Continue with the flow even if SMS fails
       // In production, you might want to handle this differently
     }

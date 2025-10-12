@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: result.success,
-      message: result.success ? 'پیامک با موفقیت ارسال شد' : 'خطا در ارسال پیامک',
-      details: result
+      message: result.message || (result.success ? 'پیامک با موفقیت ارسال شد' : 'خطا در ارسال پیامک'),
+      details: result,
+      timestamp: new Date().toISOString()
     })
     
   } catch (error) {
