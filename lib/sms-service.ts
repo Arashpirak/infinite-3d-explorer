@@ -24,7 +24,7 @@ class SMSService {
       const formattedPhone = phoneNumber.startsWith('09') ? phoneNumber : `09${phoneNumber}`
       
       // Persian SMS message for OTP
-      const message = `کد ورود: ${otp} لغو11`
+      const message = `کد ورود: ${otp}\nلغو11`
       
       const requestBody = {
         username: this.config.username,
@@ -86,7 +86,7 @@ class SMSService {
       const formattedPhone = phoneNumber.startsWith('09') ? phoneNumber : `09${phoneNumber}`
       
       // Persian SMS message for password reset
-      const message = `کد تغییر رمز: ${otp} لغو11`
+      const message = `کد تغییر رمز: ${otp}\nلغو11`
       
       const requestBody = {
         username: this.config.username,

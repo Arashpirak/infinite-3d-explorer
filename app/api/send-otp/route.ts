@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Check if user exists
+    const existingUser = await db.user.findUnique({
+      where: { phone: mobile }
+    })
+    
     // Generate OTP
     const otp = generateOTP()
     const otpHash = await bcrypt.hash(otp, 10)
@@ -101,7 +106,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: 'کد تأیید ارسال شد',
+      message: existingUser ? 'کد تأیید برای ورود ارسال شد' : 'کد تأیید برای ثبت‌نام ارسال شد',
+      isExistingUser: !!existingUser,
+      hasPassword: !!existingUser?.password,
       requestId: crypto.randomUUID()
     })
     

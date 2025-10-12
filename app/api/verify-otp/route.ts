@@ -48,13 +48,13 @@ export async function POST(request: NextRequest) {
     // Verify OTP
     const isValidOtp = await bcrypt.compare(otp, otpRecord.otpHash)
     
-    // Increment attempts
-    await db.phoneOtp.update({
-      where: { id: otpRecord.id },
-      data: { attempts: otpRecord.attempts + 1 }
-    })
-    
     if (!isValidOtp) {
+      // Increment attempts only on failure
+      await db.phoneOtp.update({
+        where: { id: otpRecord.id },
+        data: { attempts: otpRecord.attempts + 1 }
+      })
+      
       return NextResponse.json(
         { error: true, message: 'کد تأیید اشتباه است' },
         { status: 400 }
@@ -88,19 +88,7 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      // Send welcome SMS to new user
-      try {
-        const smsService = getSMSService()
-        const welcomeResult = await smsService.sendWelcomeMessage(mobile)
-        if (welcomeResult.success) {
-          console.log(`Welcome SMS sent successfully to ${mobile}`)
-        } else {
-          console.error('Welcome SMS failed:', welcomeResult.error)
-        }
-      } catch (error) {
-        console.error('Welcome SMS service error:', error)
-        // Don't fail the registration if welcome SMS fails
-      }
+      // Welcome SMS removed as requested
     }
     
     // Create session token

@@ -96,6 +96,13 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
         setSmsStatus("success")
         setStep("otp")
         setError("") // Clear any previous errors
+        
+        // Show appropriate message based on user status
+        if (data.isExistingUser) {
+          console.log("👤 Existing user - will go to login after OTP verification")
+        } else {
+          console.log("🆕 New user - will go to password creation after OTP verification")
+        }
       } else {
         console.log("❌ Melipayamak SMS sending failed:", data.message)
         setSmsStatus("failed")
@@ -177,6 +184,8 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       if (data.success) {
         localStorage.setItem("isLoggedIn", "true")
         localStorage.setItem("userPhone", mobile)
+        // Show success message before continuing
+        alert("✅ ثبت‌نام با موفقیت انجام شد! خوش آمدید.")
         onContinue?.()
       } else {
         setError(data.message || "خطا در ایجاد رمز عبور")
@@ -367,6 +376,9 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
             <p className="text-green-600 text-xs mt-1">
               لطفاً کد ۴ رقمی دریافتی را وارد کنید
             </p>
+            <p className="text-green-500 text-xs mt-1">
+              💡 کد ورود از چپ به راست وارد کنید
+            </p>
           </div>
 
           <div>
@@ -380,23 +392,28 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
                 onChange={setOtp}
                 maxLength={4}
                 className="gap-2"
+                dir="ltr"
               >
                 <InputOTPGroup className="gap-2">
                   <InputOTPSlot 
                     index={0} 
                     className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                    dir="ltr"
                   />
                   <InputOTPSlot 
                     index={1} 
                     className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                    dir="ltr"
                   />
                   <InputOTPSlot 
                     index={2} 
                     className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                    dir="ltr"
                   />
                   <InputOTPSlot 
                     index={3} 
                     className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                    dir="ltr"
                   />
                 </InputOTPGroup>
               </InputOTP>
