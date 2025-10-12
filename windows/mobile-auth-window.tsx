@@ -24,21 +24,64 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
   const [copied, setCopied] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
   const [error, setError] = useState("")
+  const [smsStatus, setSmsStatus] = useState<"idle" | "sending" | "success" | "failed">("idle")
 
   const validateMobile = (mobile: string) => {
     const mobileRegex = /^09\d{9}$/ // فرمت ایرانی: ۰۹xxxxxxxxx
     return mobileRegex.test(mobile)
   }
 
+  const testSmsService = async () => {
+    if (!validateMobile(mobile)) {
+      setError("لطفاً ابتدا شماره موبایل معتبر وارد کنید")
+      return
+    }
+
+    setError("")
+    setSmsStatus("sending")
+    try {
+      console.log("🧪 Testing Melipayamak SMS service with:", mobile)
+      const response = await fetch("/api/test-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          phone: mobile, 
+          message: "تست سرویس Melipayamak - این یک پیام تستی است" 
+        }),
+      })
+
+      const data = await response.json()
+      console.log("🧪 Melipayamak Test Response:", data)
+      
+      if (data.success) {
+        setSmsStatus("success")
+        setError("") // Clear any previous errors
+        alert("✅ تست Melipayamak موفق بود! پیامک ارسال شد.")
+      } else {
+        setSmsStatus("failed")
+        setError(data.message || "خطا در تست سرویس Melipayamak")
+        alert("❌ تست Melipayamak ناموفق: " + (data.message || "خطای نامشخص"))
+      }
+    } catch (error) {
+      console.error("❌ Melipayamak Test Error:", error)
+      setSmsStatus("failed")
+      setError("خطا در تست سرویس Melipayamak")
+      alert("❌ خطا در تست سرویس Melipayamak")
+    }
+  }
+
   const handleSendOtp = async () => {
     setError("")
+    setSmsStatus("idle")
     if (!validateMobile(mobile)) {
       setError("شماره موبایل نامعتبر است")
       return
     }
 
     setIsLoading(true)
+    setSmsStatus("sending")
     try {
+      console.log("📱 Sending OTP via Melipayamak to:", mobile)
       const response = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -46,13 +89,22 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       })
 
       const data = await response.json()
+      console.log("📱 Melipayamak OTP Response:", data)
+      
       if (data.success) {
+        console.log("✅ OTP sent successfully via Melipayamak")
+        setSmsStatus("success")
         setStep("otp")
+        setError("") // Clear any previous errors
       } else {
-        setError(data.message || "خطا در ارسال کد")
+        console.log("❌ Melipayamak SMS sending failed:", data.message)
+        setSmsStatus("failed")
+        setError(data.message || "خطا در ارسال کد تأیید از طریق Melipayamak")
       }
     } catch (error) {
-      setError("خطا در ارتباط با سرور")
+      console.error("❌ Melipayamak SMS API Error:", error)
+      setSmsStatus("failed")
+      setError("خطا در ارتباط با سرویس Melipayamak. لطفاً دوباره تلاش کنید.")
     } finally {
       setIsLoading(false)
     }
@@ -67,6 +119,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
 
     setIsLoading(true)
     try {
+      console.log("🔐 Verifying OTP for:", mobile)
       const response = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,8 +127,12 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       })
 
       const data = await response.json()
+      console.log("🔐 OTP Verification Response:", data)
+      
       if (data.success) {
+        console.log("✅ OTP verified successfully")
         setIsNewUser(data.isNewUser)
+        setError("") // Clear any previous errors
         if (data.isNewUser) {
           setInvitationCode(data.invitationCode)
           setStep("password")
@@ -85,10 +142,12 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
           setStep("password")
         }
       } else {
-        setError(data.message || "خطا در تأیید کد")
+        console.log("❌ OTP verification failed:", data.message)
+        setError(data.message || "کد تأیید اشتباه است")
       }
     } catch (error) {
-      setError("خطا در ارتباط با سرور")
+      console.error("❌ OTP Verification API Error:", error)
+      setError("خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.")
     } finally {
       setIsLoading(false)
     }
@@ -202,67 +261,163 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       {step === "mobile" && (
         <div className="space-y-6">
           <div>
-            <Label htmlFor="mobile" className="text-right block text-[#08075C] font-medium">
+            <Label htmlFor="mobile" className="text-right block text-[#08075C] font-medium mb-2">
               شماره موبایل
             </Label>
-            <div className="relative mt-2">
+            <div className="relative">
               <Input
                 id="mobile"
                 type="tel"
                 placeholder="09123456789"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
-                className="text-right pr-10"
+                className="text-right pr-10 py-3 text-lg border-2 border-gray-300 focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                dir="ltr"
               />
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
+            <p className="text-gray-500 text-xs mt-2 text-right">
+              شماره موبایل خود را با فرمت ۰۹xxxxxxxxx وارد کنید
+            </p>
           </div>
 
-          <Button
-            onClick={handleSendOtp}
-            className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3"
-            disabled={isLoading || !mobile}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                در حال ارسال...
-              </>
-            ) : (
-              "ارسال کد تأیید"
-            )}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleSendOtp}
+              className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium text-lg"
+              disabled={isLoading || !mobile || !validateMobile(mobile)}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                  در حال ارسال کد...
+                </>
+              ) : (
+                <>
+                  <Phone className="ml-2 h-5 w-5" />
+                  ارسال کد تأیید
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={testSmsService}
+              variant="outline"
+              className="w-full border-[#01ADEF] text-[#01ADEF] hover:bg-[#01ADEF] hover:text-white"
+              disabled={isLoading || !mobile || !validateMobile(mobile)}
+            >
+              🧪 تست سرویس Melipayamak
+            </Button>
+          </div>
+
+          {mobile && !validateMobile(mobile) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-yellow-800 text-sm">
+                ⚠️ لطفاً شماره موبایل را با فرمت صحیح وارد کنید (۰۹xxxxxxxxx)
+              </p>
+            </div>
+          )}
+
+          {/* SMS Status Indicator */}
+          {smsStatus === "sending" && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                <p className="text-blue-800 text-sm">
+                  در حال ارسال پیامک از طریق Melipayamak...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {smsStatus === "success" && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <p className="text-green-800 text-sm">
+                  ✅ پیامک با موفقیت از طریق Melipayamak ارسال شد
+                </p>
+              </div>
+            </div>
+          )}
+
+          {smsStatus === "failed" && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <p className="text-red-800 text-sm">
+                  ❌ خطا در ارسال پیامک از طریق Melipayamak
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {step === "otp" && (
         <div className="space-y-6">
+          {/* Success Message */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-green-800 text-sm font-medium">
+                کد تأیید از طریق Melipayamak به شماره {mobile} ارسال شد
+              </p>
+            </div>
+            <p className="text-green-600 text-xs mt-1">
+              لطفاً کد ۶ رقمی دریافتی را وارد کنید
+            </p>
+          </div>
+
           <div>
-            <Label htmlFor="otp" className="text-right block text-[#08075C] font-medium">
-              کد تأیید ارسال شده به {mobile}
+            <Label htmlFor="otp" className="text-right block text-[#08075C] font-medium mb-3">
+              کد تأیید
             </Label>
-            <InputOTP
-              id="otp"
-              value={otp}
-              onChange={setOtp}
-              maxLength={6}
-              className="mt-4"
-            >
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
+            <div className="flex justify-center">
+              <InputOTP
+                id="otp"
+                value={otp}
+                onChange={setOtp}
+                maxLength={6}
+                className="gap-2"
+              >
+                <InputOTPGroup className="gap-2">
+                  <InputOTPSlot 
+                    index={0} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                  <InputOTPSlot 
+                    index={1} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                  <InputOTPSlot 
+                    index={2} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                  <InputOTPSlot 
+                    index={3} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                  <InputOTPSlot 
+                    index={4} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                  <InputOTPSlot 
+                    index={5} 
+                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                  />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <p className="text-gray-500 text-xs text-center mt-3">
+              کد تأیید ۶ رقمی را وارد کنید
+            </p>
           </div>
 
           <Button
             onClick={handleVerifyOtp}
-            className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3"
-            disabled={isLoading || !otp}
+            className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium"
+            disabled={isLoading || otp.length !== 6}
           >
             {isLoading ? (
               <>
@@ -274,13 +429,23 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
             )}
           </Button>
 
-          <Button
-            onClick={() => setStep("mobile")}
-            variant="outline"
-            className="w-full"
-          >
-            تغییر شماره موبایل
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setStep("mobile")}
+              variant="outline"
+              className="flex-1"
+            >
+              تغییر شماره
+            </Button>
+            <Button
+              onClick={handleSendOtp}
+              variant="outline"
+              className="flex-1"
+              disabled={isLoading}
+            >
+              ارسال مجدد
+            </Button>
+          </div>
         </div>
       )}
 
