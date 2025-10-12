@@ -23,6 +23,14 @@ class ConversationStore {
     return this.messages
   }
 
+  getConversationHistory() {
+    // Convert messages to format expected by API
+    return this.messages.map(msg => ({
+      role: msg.sender === "user" ? "user" : "assistant",
+      content: msg.text
+    }))
+  }
+
   clearMessages() {
     this.messages = []
     this.notifyListeners()

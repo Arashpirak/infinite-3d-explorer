@@ -22,6 +22,12 @@ MELIPAYAMAK_USERNAME="your_melipayamak_username"
 MELIPAYAMAK_PASSWORD="your_melipayamak_password"
 MELIPAYAMAK_FROM="5000****"
 
+# AI Services Configuration
+GEMINI_API_KEY="your_gemini_api_key_here"
+OPENROUTER_API_KEY="your_openrouter_api_key_here"
+OPENROUTER_HTTP_REFERER="https://your-app-name.onrender.com"
+OPENROUTER_TITLE="Infinite 3D Explorer"
+
 # JWT Secret for User Authentication
 JWT_SECRET="your_very_secure_random_string_here"
 
