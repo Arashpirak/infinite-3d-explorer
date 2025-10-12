@@ -33,7 +33,7 @@ Your mobile authentication window now fully integrates with the Melipayamak SMS 
 
 ### **OTP Input Step:**
 1. **Success Message**: Confirms SMS sent via Melipayamak
-2. **Professional Input**: Large, styled 6-digit OTP input
+2. **Professional Input**: Large, styled 4-digit OTP input
 3. **Resend Option**: Can resend OTP using Melipayamak
 4. **Change Number**: Option to go back and change phone number
 

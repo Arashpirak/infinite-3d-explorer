@@ -24,7 +24,7 @@ class SMSService {
       const formattedPhone = phoneNumber.startsWith('09') ? phoneNumber : `09${phoneNumber}`
       
       // Persian SMS message for OTP
-      const message = `کد تأیید شما: ${otp}\nاین کد تا ۵ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
+      const message = `کد ورود: ${otp} لغو11`
       
       const requestBody = {
         username: this.config.username,
@@ -86,7 +86,7 @@ class SMSService {
       const formattedPhone = phoneNumber.startsWith('09') ? phoneNumber : `09${phoneNumber}`
       
       // Persian SMS message for password reset
-      const message = `کد تأیید برای تغییر رمز عبور: ${otp}\nاین کد تا ۱۰ دقیقه معتبر است.\n\nدر صورت عدم درخواست این کد، لطفاً آن را نادیده بگیرید.`
+      const message = `کد تغییر رمز: ${otp} لغو11`
       
       const requestBody = {
         username: this.config.username,

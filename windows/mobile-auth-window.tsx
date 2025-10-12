@@ -112,8 +112,8 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
 
   const handleVerifyOtp = async () => {
     setError("")
-    if (otp.length !== 6) {
-      setError("کد تأیید باید ۶ رقم باشد")
+    if (otp.length !== 4) {
+      setError("کد تأیید باید ۴ رقم باشد")
       return
     }
 
@@ -365,7 +365,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
               </p>
             </div>
             <p className="text-green-600 text-xs mt-1">
-              لطفاً کد ۶ رقمی دریافتی را وارد کنید
+              لطفاً کد ۴ رقمی دریافتی را وارد کنید
             </p>
           </div>
 
@@ -378,7 +378,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
                 id="otp"
                 value={otp}
                 onChange={setOtp}
-                maxLength={6}
+                maxLength={4}
                 className="gap-2"
               >
                 <InputOTPGroup className="gap-2">
@@ -398,26 +398,18 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
                     index={3} 
                     className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
                   />
-                  <InputOTPSlot 
-                    index={4} 
-                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
-                  />
-                  <InputOTPSlot 
-                    index={5} 
-                    className="w-12 h-12 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
-                  />
                 </InputOTPGroup>
               </InputOTP>
             </div>
             <p className="text-gray-500 text-xs text-center mt-3">
-              کد تأیید ۶ رقمی را وارد کنید
+              کد تأیید ۴ رقمی را وارد کنید
             </p>
           </div>
 
           <Button
             onClick={handleVerifyOtp}
             className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium"
-            disabled={isLoading || otp.length !== 6}
+            disabled={isLoading || otp.length !== 4}
           >
             {isLoading ? (
               <>
