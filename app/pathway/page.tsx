@@ -111,7 +111,7 @@ export default function PathwayPage() {
   const visibleWindows = useMemo(() => {
     return windows.filter((window) => {
       const isDefaultLocked = DEFAULT_LOCKED_WINDOWS.includes(window.id)
-      if (window.requiresAuth && !isLoggedIn && window.id !== "user-dashboard") {
+      if (window.requiresAuth && !isLoggedIn) {
         return false
       }
       // Lock mobile-auth when logged in
@@ -143,6 +143,10 @@ export default function PathwayPage() {
 
     const targetWindow = visibleWindows.find((w) => w.id === windowId)
     if (!targetWindow || windowId === currentWindowId || isTransitioning) return
+
+    // Prevent navigating to locked windows
+    const isLocked = (targetWindow.requiresAuth && !isLoggedIn) || (targetWindow.id === "mobile-auth" && isLoggedIn)
+    if (isLocked) return
 
     setIsTransitioning(true)
 
@@ -373,7 +377,10 @@ export default function PathwayPage() {
                   return (
                     <button
                       key={windowId}
-                      onClick={() => navigateToPinnedWindow(windowId)}
+                      onClick={() => {
+                        const locked = (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                        if (!locked) navigateToPinnedWindow(windowId)
+                      }}
                       disabled={isNavigationLocked}
                       className={`
                         px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 backdrop-blur-sm shadow-md

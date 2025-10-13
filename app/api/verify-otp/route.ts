@@ -98,8 +98,10 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-        // increment uses
+        // increment uses and capture inviter
         await db.invite.update({ where: { id: foundInvite.id }, data: { uses: { increment: 1 } } })
+        // Save inviter for the new user after creation
+        var inviterUserId = foundInvite.userId
       }
 
       // Create new user with generated invitation code saved
@@ -110,6 +112,13 @@ export async function POST(request: NextRequest) {
           status: 'active'
         }
       })
+
+      // Save user's own invite code onto users table
+      await db.$executeRawUnsafe(
+        `UPDATE users SET invite_code = $1${inviterUserId ? ', invited_by_user_id = $2' : ''} WHERE id = $${inviterUserId ? 3 : 2}`,
+        invitationCode,
+        ...(inviterUserId ? [inviterUserId, user.id] : [user.id])
+      )
       
       // Create invitation record
       await db.invite.create({
@@ -120,6 +129,16 @@ export async function POST(request: NextRequest) {
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
         }
       })
+
+      // Record invite usage audit when inviter exists and not 00000
+      if (typeof inviterUserId === 'string' && normalizedInvite !== '00000') {
+        await db.$executeRawUnsafe(
+          `INSERT INTO invite_uses (inviter_user_id, invited_user_id, code) VALUES ($1, $2, $3)`,
+          inviterUserId,
+          user.id,
+          normalizedInvite
+        )
+      }
       
       // Welcome SMS removed as requested
     }
