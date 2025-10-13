@@ -395,7 +395,7 @@ export default function PathwayPage() {
             </div>
           )}
 
-          <div className="absolute left-0 top-0 bottom-0 w-[5%] flex items-center justify-center">
+          <div className="absolute left-0 top-0 bottom-0 w-[5%] flex items-center justify-center z-30 pointer-events-none">
             <button
               onClick={navigateToPreviousWindow}
               disabled={isNavigationLocked || visibleWindows.findIndex((w) => w.id === currentWindowId) === 0}
@@ -408,12 +408,13 @@ export default function PathwayPage() {
                 }
               `}
               title={isNavigationLocked ? "Navigation locked" : "Previous window"}
+              style={{ pointerEvents: 'auto' }}
             >
               <ChevronLeft size={24} />
             </button>
           </div>
 
-          <div className="absolute right-0 top-0 bottom-0 w-[5%] flex items-center justify-center">
+          <div className="absolute right-0 top-0 bottom-0 w-[5%] flex items-center justify-center z-30 pointer-events-none">
             <button
               onClick={navigateToNextWindow}
               disabled={
@@ -430,6 +431,7 @@ export default function PathwayPage() {
                 }
               `}
               title={isNavigationLocked ? "Navigation locked" : "Next window"}
+              style={{ pointerEvents: 'auto' }}
             >
               <ChevronRight size={24} />
             </button>
@@ -449,7 +451,7 @@ export default function PathwayPage() {
               {currentWindow && ((currentWindow.requiresAuth && !isLoggedIn) || (currentWindow.id === "mobile-auth" && isLoggedIn)) && (
                 <div className="absolute inset-0 bg-black/30 rounded-3xl z-10 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-3 text-white/80">
-                    <Lock size={64} />
+                    <Lock size={96} />
                     <span className="text-xs">Locked</span>
                   </div>
                 </div>
