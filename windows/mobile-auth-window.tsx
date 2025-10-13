@@ -184,6 +184,8 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       if (data.success) {
         localStorage.setItem("isLoggedIn", "true")
         localStorage.setItem("userPhone", mobile)
+        // Notify other tabs/components
+        window.dispatchEvent(new Event("loginStatusChanged"))
         // Show success message before continuing
         alert("✅ ثبت‌نام با موفقیت انجام شد! خوش آمدید.")
         onContinue?.()
@@ -216,6 +218,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       if (data.success) {
         localStorage.setItem("isLoggedIn", "true")
         localStorage.setItem("userPhone", mobile)
+        window.dispatchEvent(new Event("loginStatusChanged"))
         onContinue?.()
       } else {
         setError(data.message || "خطا در ورود")

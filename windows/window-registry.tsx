@@ -5,6 +5,7 @@ import { EnglishQuizWindow } from "./english-quiz-window"
 import { SignInWindow } from "./sign-in-window"
 import { ChatboxWindow } from "./chatbox-window"
 import { MobileAuthWindow } from "./mobile-auth-window"
+import { UserDashboardWindow } from "./user-dashboard-window"
 
 export interface WindowConfig {
   id: string
@@ -82,6 +83,15 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
     ),
     initialPosition: { x: 20, y: -12, scale: 0.35, depth: 3 },
     unlocked: true,
+  },
+  {
+    id: "user-dashboard",
+    title: "داشبورد کاربر",
+    description: "نمای کلی حساب، اعتبار و تاریخچه",
+    component: UserDashboardWindow,
+    initialPosition: { x: 15, y: -8, scale: 0.32, depth: 3 },
+    unlocked: true,
+    requiresAuth: true,
   },
   {
     id: "pricing",

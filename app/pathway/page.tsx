@@ -31,10 +31,10 @@ export default function PathwayPage() {
     WINDOW_REGISTRY.map((window) => ({
       ...window,
       position: { ...window.initialPosition },
-      isPinned: ["how-we-help", "features", "pricing"].includes(window.id),
+      isPinned: ["how-we-help", "features", "pricing", "user-dashboard"].includes(window.id),
     })),
   )
-  const [pinnedWindows, setPinnedWindows] = useState<string[]>(["how-we-help", "features", "pricing"])
+  const [pinnedWindows, setPinnedWindows] = useState<string[]>(["how-we-help", "features", "pricing", "user-dashboard"])
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [isNavigationLocked, setIsNavigationLocked] = useState(false)
@@ -87,7 +87,7 @@ export default function PathwayPage() {
 
   const visibleWindows = useMemo(() => {
     return windows.filter((window) => {
-      if (window.requiresAuth && !isLoggedIn) {
+      if (window.requiresAuth && !isLoggedIn && window.id !== "user-dashboard") {
         return false
       }
       return true
@@ -396,7 +396,14 @@ export default function PathwayPage() {
           </div>
 
           {CurrentWindowComponent && (
-            <CurrentWindowComponent onContinue={() => {}} onLockNavigation={setIsNavigationLocked} />
+            <CurrentWindowComponent
+              onContinue={() => {
+                if (currentWindow?.id === "mobile-auth") {
+                  navigateToWindow("user-dashboard")
+                }
+              }}
+              onLockNavigation={setIsNavigationLocked}
+            />
           )}
 
           {currentWindow && (
