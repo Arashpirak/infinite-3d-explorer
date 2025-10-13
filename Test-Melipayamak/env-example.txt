@@ -1,9 +1,0 @@
-# Melipayamak SMS Service Configuration
-MP_USERNAME="your_melipayamak_username"
-MP_PASSWORD="your_melipayamak_password"
-MP_FROM="5000****"
-
-# Instructions:
-# 1. Copy this content to a .env file in the Test-Melipayamak folder
-# 2. Replace the placeholder values with your actual Melipayamak credentials
-# 3. Make sure .env is in .gitignore (never commit credentials)

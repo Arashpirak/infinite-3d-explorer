@@ -32,44 +32,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
     return mobileRegex.test(mobile)
   }
 
-  const testSmsService = async () => {
-    if (!validateMobile(mobile)) {
-      setError("لطفاً ابتدا شماره موبایل معتبر وارد کنید")
-      return
-    }
-
-    setError("")
-    setSmsStatus("sending")
-    try {
-      console.log("🧪 Testing Melipayamak SMS service with:", mobile)
-      const response = await fetch("/api/test-sms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          phone: mobile, 
-          message: "تست سرویس Melipayamak - این یک پیام تستی است" 
-        }),
-      })
-
-      const data = await response.json()
-      console.log("🧪 Melipayamak Test Response:", data)
-      
-      if (data.success) {
-        setSmsStatus("success")
-        setError("") // Clear any previous errors
-        alert("✅ تست Melipayamak موفق بود! پیامک ارسال شد.")
-      } else {
-        setSmsStatus("failed")
-        setError(data.message || "خطا در تست سرویس Melipayamak")
-        alert("❌ تست Melipayamak ناموفق: " + (data.message || "خطای نامشخص"))
-      }
-    } catch (error) {
-      console.error("❌ Melipayamak Test Error:", error)
-      setSmsStatus("failed")
-      setError("خطا در تست سرویس Melipayamak")
-      alert("❌ خطا در تست سرویس Melipayamak")
-    }
-  }
+  // Test SMS function removed
 
   const handleSendOtp = async () => {
     setError("")
@@ -130,7 +93,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
     setIsLoading(true)
     setSmsStatus("sending")
     try {
-      console.log("📱 Sending OTP via Melipayamak to:", mobile)
+      console.log("📱 Sending OTP via SMS to:", mobile)
       const response = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,19 +104,19 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       console.log("📱 OTP Response:", data)
       
       if (data.success) {
-        console.log("✅ OTP sent successfully via Melipayamak")
+        console.log("✅ OTP sent successfully via SMS")
         setSmsStatus("success")
         setStep("otp")
         setError("")
       } else {
-        console.log("❌ Melipayamak SMS sending failed:", data.message)
+        console.log("❌ SMS sending failed:", data.message)
         setSmsStatus("failed")
-        setError(data.message || "خطا در ارسال کد تأیید از طریق Melipayamak")
+        setError(data.message || "خطا در ارسال کد تأیید")
       }
     } catch (error) {
-      console.error("❌ Melipayamak SMS API Error:", error)
+      console.error("❌ SMS API Error:", error)
       setSmsStatus("failed")
-      setError("خطا در ارتباط با سرویس Melipayamak. لطفاً دوباره تلاش کنید.")
+      setError("خطا در ارتباط با سرویس پیامکی. لطفاً دوباره تلاش کنید.")
     } finally {
       setIsLoading(false)
     }
@@ -369,14 +332,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
               )}
             </Button>
 
-            <Button
-              onClick={testSmsService}
-              variant="outline"
-              className="w-full border-[#01ADEF] text-[#01ADEF] hover:bg-[#01ADEF] hover:text-white"
-              disabled={isLoading || !mobile || !validateMobile(mobile)}
-            >
-              🧪 تست سرویس Melipayamak
-            </Button>
+            
           </div>
 
           {mobile && !validateMobile(mobile) && (
@@ -392,9 +348,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                <p className="text-blue-800 text-sm">
-                  در حال ارسال پیامک از طریق Melipayamak...
-                </p>
+                <p className="text-blue-800 text-sm">در حال ارسال پیامک...</p>
               </div>
             </div>
           )}
@@ -403,9 +357,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <p className="text-green-800 text-sm">
-                  ✅ پیامک با موفقیت از طریق Melipayamak ارسال شد
-                </p>
+                <p className="text-green-800 text-sm">✅ پیامک با موفقیت ارسال شد</p>
               </div>
             </div>
           )}
@@ -414,9 +366,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <p className="text-red-800 text-sm">
-                  ❌ خطا در ارسال پیامک از طریق Melipayamak
-                </p>
+                <p className="text-red-800 text-sm">❌ خطا در ارسال پیامک</p>
               </div>
             </div>
           )}
