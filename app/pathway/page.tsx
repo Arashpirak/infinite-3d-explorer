@@ -106,8 +106,11 @@ export default function PathwayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty dependency array - only run once on mount
 
+  const DEFAULT_LOCKED_WINDOWS = ["user-dashboard", "user-settings"]
+
   const visibleWindows = useMemo(() => {
     return windows.filter((window) => {
+      const isDefaultLocked = DEFAULT_LOCKED_WINDOWS.includes(window.id)
       if (window.requiresAuth && !isLoggedIn && window.id !== "user-dashboard") {
         return false
       }

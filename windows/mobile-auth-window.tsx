@@ -21,6 +21,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<"mobile" | "otp" | "password" | "login">("mobile")
   const [invitationCode, setInvitationCode] = useState("")
+  const [inviteInput, setInviteInput] = useState("")
   const [copied, setCopied] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
   const [error, setError] = useState("")
@@ -78,6 +79,11 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       return
     }
 
+    if (!inviteInput || inviteInput.length !== 5) {
+      setError("کد دعوت باید ۵ کاراکتر هگز یا 00000 باشد")
+      return
+    }
+
     setIsLoading(true)
     setSmsStatus("sending")
     try {
@@ -85,7 +91,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       const response = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile }),
+        body: JSON.stringify({ mobile, inviteCode: inviteInput.toUpperCase() }),
       })
 
       const data = await response.json()
@@ -184,8 +190,12 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       if (data.success) {
         localStorage.setItem("isLoggedIn", "true")
         localStorage.setItem("userPhone", mobile)
-        // Notify other tabs/components
+        // Generate 5-digit hex invite code based on registration time
+        const now = Date.now()
+        const code = (now & 0xfffff).toString(16).toUpperCase().padStart(5, "0").slice(-5)
+        localStorage.setItem("inviteCode", code)
         window.dispatchEvent(new Event("loginStatusChanged"))
+        // Notify other tabs/components
         // Show success message before continuing
         alert("✅ ثبت‌نام با موفقیت انجام شد! خوش آمدید.")
         onContinue?.()
@@ -294,6 +304,24 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
           </div>
 
           <div className="space-y-3">
+            <div>
+              <Label htmlFor="invite" className="text-right block text-[#08075C] font-medium mb-2">
+                کد دعوت
+              </Label>
+              <Input
+                id="invite"
+                type="text"
+                placeholder="کد دعوت ۵ رقمی (اگر ندارید 00000 وارد کنید)"
+                value={inviteInput}
+                onChange={(e) => setInviteInput(e.target.value.toUpperCase())}
+                maxLength={5}
+                className="text-right pr-10 py-3 text-lg border-2 border-gray-300 focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+                dir="ltr"
+              />
+              <p className="text-gray-500 text-xs mt-2 text-right">
+                اگر کد دعوت ندارید، مقدار <code className="px-1">00000</code> را وارد کنید
+              </p>
+            </div>
             <Button
               onClick={handleSendOtp}
               className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium text-lg"

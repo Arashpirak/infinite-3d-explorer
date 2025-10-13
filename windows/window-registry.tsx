@@ -6,6 +6,7 @@ import { SignInWindow } from "./sign-in-window"
 import { ChatboxWindow } from "./chatbox-window"
 import { MobileAuthWindow } from "./mobile-auth-window"
 import { UserDashboardWindow } from "./user-dashboard-window"
+import { UserSettingsWindow } from "./user-settings-window"
 
 export interface WindowConfig {
   id: string
@@ -90,6 +91,15 @@ export const WINDOW_REGISTRY: WindowConfig[] = [
     description: "نمای کلی حساب، اعتبار و تاریخچه",
     component: UserDashboardWindow,
     initialPosition: { x: 15, y: -8, scale: 0.32, depth: 3 },
+    unlocked: true,
+    requiresAuth: true,
+  },
+  {
+    id: "user-settings",
+    title: "تنظیمات کاربر",
+    description: "مدیریت رمز عبور و علایق",
+    component: UserSettingsWindow,
+    initialPosition: { x: 18, y: -10, scale: 0.30, depth: 3.2 },
     unlocked: true,
     requiresAuth: true,
   },
