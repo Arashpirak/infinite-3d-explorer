@@ -11,7 +11,7 @@ function generateInvitationCode(): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { mobile, otp } = await request.json()
+    const { mobile, otp, inviteCode } = await request.json()
     
     // Validate inputs
     if (!mobile || !otp) {
@@ -69,7 +69,40 @@ export async function POST(request: NextRequest) {
     const isNewUser = !user
     
     if (isNewUser) {
-      // Create new user with invitation code
+      // Validate invite code for new users (00000 allowed)
+      const normalizedInvite = (inviteCode || '').toString().toUpperCase()
+      if (!normalizedInvite || normalizedInvite.length !== 5) {
+        return NextResponse.json(
+          { error: true, message: 'کد دعوت نامعتبر است' },
+          { status: 400 }
+        )
+      }
+      if (normalizedInvite !== '00000') {
+        const foundInvite = await db.invite.findUnique({ where: { code: normalizedInvite } })
+        if (!foundInvite) {
+          return NextResponse.json(
+            { error: true, message: 'کد دعوت یافت نشد' },
+            { status: 400 }
+          )
+        }
+        const now = new Date()
+        if (foundInvite.expiresAt && foundInvite.expiresAt < now) {
+          return NextResponse.json(
+            { error: true, message: 'کد دعوت منقضی شده است' },
+            { status: 400 }
+          )
+        }
+        if (foundInvite.uses >= foundInvite.maxUses) {
+          return NextResponse.json(
+            { error: true, message: 'کد دعوت به حداکثر استفاده رسیده است' },
+            { status: 400 }
+          )
+        }
+        // increment uses
+        await db.invite.update({ where: { id: foundInvite.id }, data: { uses: { increment: 1 } } })
+      }
+
+      // Create new user with generated invitation code saved
       const invitationCode = generateInvitationCode()
       user = await db.user.create({
         data: {

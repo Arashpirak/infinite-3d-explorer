@@ -35,7 +35,7 @@ function generateInvitationCode(): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { mobile } = await request.json()
+    const { mobile, inviteCode } = await request.json()
     
     // Validate phone number (Iranian format)
     const phoneRegex = /^09\d{9}$/
@@ -46,6 +46,52 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Check if user exists
+    const existingUser = await db.user.findUnique({
+      where: { phone: mobile }
+    })
+
+    // If user exists, do NOT send OTP. Ask for password.
+    if (existingUser) {
+      return NextResponse.json({
+        success: true,
+        message: 'کاربر یافت شد. لطفاً رمز عبور را وارد کنید',
+        isExistingUser: true,
+        hasPassword: !!existingUser.password,
+      })
+    }
+
+    // For new users, require an invite code (allow 00000 as fallback)
+    const normalizedInvite = (inviteCode || '').toString().toUpperCase()
+    if (!normalizedInvite || normalizedInvite.length !== 5) {
+      return NextResponse.json(
+        { error: true, message: 'کد دعوت نامعتبر است' },
+        { status: 400 }
+      )
+    }
+    if (normalizedInvite !== '00000') {
+      const now = new Date()
+      const invite = await db.invite.findUnique({ where: { code: normalizedInvite } })
+      if (!invite) {
+        return NextResponse.json(
+          { error: true, message: 'کد دعوت یافت نشد' },
+          { status: 400 }
+        )
+      }
+      if (invite.expiresAt && invite.expiresAt < now) {
+        return NextResponse.json(
+          { error: true, message: 'کد دعوت منقضی شده است' },
+          { status: 400 }
+        )
+      }
+      if (invite.uses >= invite.maxUses) {
+        return NextResponse.json(
+          { error: true, message: 'کد دعوت به حداکثر استفاده رسیده است' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check rate limit
     if (!checkRateLimit(mobile)) {
       return NextResponse.json(
@@ -53,11 +99,6 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       )
     }
-    
-    // Check if user exists
-    const existingUser = await db.user.findUnique({
-      where: { phone: mobile }
-    })
     
     // Generate OTP
     const otp = generateOTP()
@@ -106,9 +147,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: existingUser ? 'کد تأیید برای ورود ارسال شد' : 'کد تأیید برای ثبت‌نام ارسال شد',
-      isExistingUser: !!existingUser,
-      hasPassword: !!existingUser?.password,
+      message: 'کد تأیید برای ثبت‌نام ارسال شد',
+      isExistingUser: false,
+      hasPassword: false,
       requestId: crypto.randomUUID()
     })
     

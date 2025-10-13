@@ -98,16 +98,16 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       console.log("📱 Melipayamak OTP Response:", data)
       
       if (data.success) {
-        console.log("✅ OTP sent successfully via Melipayamak")
-        setSmsStatus("success")
-        setStep("otp")
-        setError("") // Clear any previous errors
-        
-        // Show appropriate message based on user status
         if (data.isExistingUser) {
-          console.log("👤 Existing user - will go to login after OTP verification")
+          // Existing user: go to password login, do not send OTP
+          setSmsStatus("idle")
+          setStep("login")
+          setError("")
         } else {
-          console.log("🆕 New user - will go to password creation after OTP verification")
+          console.log("✅ OTP sent successfully via Melipayamak")
+          setSmsStatus("success")
+          setStep("otp")
+          setError("") // Clear any previous errors
         }
       } else {
         console.log("❌ Melipayamak SMS sending failed:", data.message)
@@ -136,7 +136,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       const response = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile, otp }),
+        body: JSON.stringify({ mobile, otp, inviteCode: inviteInput.toUpperCase() || "00000" }),
       })
 
       const data = await response.json()
@@ -330,12 +330,12 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-                  در حال ارسال کد...
+                  در حال بررسی...
                 </>
               ) : (
                 <>
                   <Phone className="ml-2 h-5 w-5" />
-                  ارسال کد تأیید
+                  ورود
                 </>
               )}
             </Button>
