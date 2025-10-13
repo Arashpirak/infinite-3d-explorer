@@ -368,10 +368,7 @@ export default function PathwayPage() {
                   return (
                     <button
                       key={windowId}
-                      onClick={() => {
-                        const locked = (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
-                        if (!locked) navigateToPinnedWindow(windowId)
-                      }}
+                      onClick={() => navigateToPinnedWindow(windowId)}
                       disabled={isNavigationLocked}
                       className={`
                         px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 backdrop-blur-sm shadow-md
@@ -450,7 +447,12 @@ export default function PathwayPage() {
               />
               {/* Overlay on active locked window to block interactions */}
               {currentWindow && ((currentWindow.requiresAuth && !isLoggedIn) || (currentWindow.id === "mobile-auth" && isLoggedIn)) && (
-                <div className="absolute inset-0 bg-black/30 rounded-3xl z-10" />
+                <div className="absolute inset-0 bg-black/30 rounded-3xl z-10 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3 text-white/80">
+                    <Lock size={64} />
+                    <span className="text-xs">Locked</span>
+                  </div>
+                </div>
               )}
             </div>
           )}
