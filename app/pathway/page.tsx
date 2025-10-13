@@ -331,25 +331,38 @@ export default function PathwayPage() {
       </div>
 
       {/* Top Right Controls */}
-      <div className="absolute top-4 right-4 flex gap-4 z-20">
-        <Link href="/">
+      <div className="absolute top-4 right-4 flex items-center gap-3 z-30">
+        {!isLoggedIn ? (
           <Button
             variant="outline"
-            size="icon"
             className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+            onClick={() => navigateToWindow("mobile-auth")}
           >
-            <Users size={20} />
+            ورود
           </Button>
-        </Link>
+        ) : (
+          <>
+            <div className="bg-green-500/20 border border-green-400/30 text-green-100 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+              وارد شده اید
+            </div>
+            <Button
+              variant="outline"
+              className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+              onClick={() => {
+                try {
+                  localStorage.setItem("isLoggedIn", "false")
+                  localStorage.removeItem("userPhone")
+                  window.dispatchEvent(new Event("loginStatusChanged"))
+                } catch {}
+                setIsLoggedIn(false)
+                navigateToWindow("sign-in")
+              }}
+            >
+              خروج
+            </Button>
+          </>
+        )}
       </div>
-
-      {isLoggedIn && (
-        <div className="absolute top-4 right-20 z-20">
-          <div className="bg-green-500/20 border border-green-400/30 text-green-100 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-            ✓ Signed In
-          </div>
-        </div>
-      )}
 
       {/* Main Active Window */}
       <div className="flex items-center justify-center min-h-screen p-8 relative z-15">
