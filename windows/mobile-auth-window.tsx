@@ -19,7 +19,7 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [step, setStep] = useState<"mobile" | "otp" | "password" | "login">("mobile")
+  const [step, setStep] = useState<"mobile" | "invite" | "otp" | "password" | "login">("mobile")
   const [invitationCode, setInvitationCode] = useState("")
   const [inviteInput, setInviteInput] = useState("")
   const [copied, setCopied] = useState(false)
@@ -79,6 +79,49 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       return
     }
 
+    setIsLoading(true)
+    setSmsStatus("sending")
+    try {
+      // First check user status
+      const checkRes = await fetch("/api/check-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile }),
+      })
+      const check = await checkRes.json()
+      if (!check.success) {
+        throw new Error(check.message || "خطا در بررسی کاربر")
+      }
+
+      if (check.exists) {
+        // Existing user: go to password login, do not ask for invite or send OTP
+        setSmsStatus("idle")
+        setStep("login")
+        setError("")
+        return
+      }
+
+      // New user: ask for invite code step first
+      setIsLoading(false)
+      setSmsStatus("idle")
+      setStep("invite")
+      return
+    } catch (error) {
+      console.error("❌ Check user API Error:", error)
+      setSmsStatus("failed")
+      setError("خطا در بررسی وضعیت کاربر")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSendOtpWithInvite = async () => {
+    setError("")
+    setSmsStatus("idle")
+    if (!validateMobile(mobile)) {
+      setError("شماره موبایل نامعتبر است")
+      return
+    }
     if (!inviteInput || inviteInput.length !== 5) {
       setError("کد دعوت باید ۵ کاراکتر هگز یا 00000 باشد")
       return
@@ -95,20 +138,13 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
       })
 
       const data = await response.json()
-      console.log("📱 Melipayamak OTP Response:", data)
+      console.log("📱 OTP Response:", data)
       
       if (data.success) {
-        if (data.isExistingUser) {
-          // Existing user: go to password login, do not send OTP
-          setSmsStatus("idle")
-          setStep("login")
-          setError("")
-        } else {
-          console.log("✅ OTP sent successfully via Melipayamak")
-          setSmsStatus("success")
-          setStep("otp")
-          setError("") // Clear any previous errors
-        }
+        console.log("✅ OTP sent successfully via Melipayamak")
+        setSmsStatus("success")
+        setStep("otp")
+        setError("")
       } else {
         console.log("❌ Melipayamak SMS sending failed:", data.message)
         setSmsStatus("failed")
@@ -150,7 +186,16 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
           setInvitationCode(data.invitationCode)
           setStep("password")
         } else if (data.hasPassword) {
-          setStep("login")
+          // If we came from reset flow, direct to set new password step
+          // Detect reset flow by lack of inviteInput usage (unchanged UI state) is unreliable;
+          // instead, rely on user clicking "فراموشی رمز" which already set step to otp.
+          // After OTP verified in reset flow, send to a dedicated new-password step.
+          if (step === "otp") {
+            // Mark as reset path by a transient flag
+            setStep("password")
+          } else {
+            setStep("login")
+          }
         } else {
           setStep("password")
         }
@@ -252,8 +297,10 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
 
       const data = await response.json()
       if (data.success) {
-        setError("") // Clear any previous errors
+        setError("")
+        // Move to OTP step and change context to password reset flow
         setStep("otp")
+        setIsNewUser(false)
       } else {
         setError(data.message || "خطا در ارسال کد")
       }
@@ -304,24 +351,6 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
           </div>
 
           <div className="space-y-3">
-            <div>
-              <Label htmlFor="invite" className="text-right block text-[#08075C] font-medium mb-2">
-                کد دعوت
-              </Label>
-              <Input
-                id="invite"
-                type="text"
-                placeholder="کد دعوت ۵ رقمی (اگر ندارید 00000 وارد کنید)"
-                value={inviteInput}
-                onChange={(e) => setInviteInput(e.target.value.toUpperCase())}
-                maxLength={5}
-                className="text-right pr-10 py-3 text-lg border-2 border-gray-300 focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
-                dir="ltr"
-              />
-              <p className="text-gray-500 text-xs mt-2 text-right">
-                اگر کد دعوت ندارید، مقدار <code className="px-1">00000</code> را وارد کنید
-              </p>
-            </div>
             <Button
               onClick={handleSendOtp}
               className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium text-lg"
@@ -391,6 +420,46 @@ export function MobileAuthWindow({ onContinue }: MobileAuthWindowProps) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {step === "invite" && (
+        <div className="space-y-6">
+          <div>
+            <Label htmlFor="invite" className="text-right block text-[#08075C] font-medium mb-2">
+              کد دعوت
+            </Label>
+            <Input
+              id="invite"
+              type="text"
+              placeholder="کد دعوت ۵ رقمی (اگر ندارید 00000 وارد کنید)"
+              value={inviteInput}
+              onChange={(e) => setInviteInput(e.target.value.toUpperCase())}
+              maxLength={5}
+              className="text-right pr-10 py-3 text-lg border-2 border-gray-300 focus:border-[#01ADEF] focus:ring-2 focus:ring-[#01ADEF]/20 transition-all duration-200"
+              dir="ltr"
+            />
+            <p className="text-gray-500 text-xs mt-2 text-right">
+              اگر کد دعوت ندارید، مقدار <code className="px-1">00000</code> را وارد کنید
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              onClick={handleSendOtpWithInvite}
+              className="w-full bg-[#01ADEF] hover:bg-[#0194D1] text-white py-3 font-medium text-lg"
+              disabled={isLoading || !inviteInput}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                  ارسال کد تأیید
+                </>
+              ) : (
+                "ارسال کد تأیید"
+              )}
+            </Button>
+          </div>
         </div>
       )}
 
