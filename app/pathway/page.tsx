@@ -109,18 +109,9 @@ export default function PathwayPage() {
   const DEFAULT_LOCKED_WINDOWS = ["user-dashboard", "user-settings"]
 
   const visibleWindows = useMemo(() => {
-    return windows.filter((window) => {
-      const isDefaultLocked = DEFAULT_LOCKED_WINDOWS.includes(window.id)
-      if (window.requiresAuth && !isLoggedIn) {
-        return false
-      }
-      // Lock mobile-auth when logged in
-      if (window.id === "mobile-auth" && isLoggedIn) {
-        return true
-      }
-      return true
-    })
-  }, [windows, isLoggedIn])
+    // Show all windows; locking will be handled visually and by click guards
+    return windows
+  }, [windows])
 
   const navigateToPreviousWindow = () => {
     if (isNavigationLocked) return
@@ -144,9 +135,7 @@ export default function PathwayPage() {
     const targetWindow = visibleWindows.find((w) => w.id === windowId)
     if (!targetWindow || windowId === currentWindowId || isTransitioning) return
 
-    // Prevent navigating to locked windows
-    const isLocked = (targetWindow.requiresAuth && !isLoggedIn) || (targetWindow.id === "mobile-auth" && isLoggedIn)
-    if (isLocked) return
+    // Allow navigation even if locked (game-like behavior)
 
     setIsTransitioning(true)
 
@@ -282,6 +271,7 @@ export default function PathwayPage() {
                       e.stopPropagation()
                       const isLocked =
                         (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                      // If locked, do not navigate via chip
                       if (!isActive && !isLocked) {
                         navigateToWindow(window.id)
                       }
@@ -305,6 +295,7 @@ export default function PathwayPage() {
                   onClick={() => {
                     const isLocked =
                       (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                    // If locked, card click does not navigate
                     if (!isActive && !isLocked) navigateToWindow(window.id)
                   }}
                 >
@@ -394,7 +385,12 @@ export default function PathwayPage() {
                       `}
                       title={isNavigationLocked ? "Navigation locked" : `Go to ${window.title}`}
                     >
-                      {window.title}
+                      <span className="inline-flex items-center gap-1">
+                        {window.title}
+                        {((window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)) && (
+                          <Lock size={10} className="opacity-80" />
+                        )}
+                      </span>
                     </button>
                   )
                 })}
@@ -443,14 +439,20 @@ export default function PathwayPage() {
           </div>
 
           {CurrentWindowComponent && (
-            <CurrentWindowComponent
-              onContinue={() => {
-                if (currentWindow?.id === "mobile-auth") {
-                  navigateToWindow("user-dashboard")
-                }
-              }}
-              onLockNavigation={setIsNavigationLocked}
-            />
+            <div className="relative">
+              <CurrentWindowComponent
+                onContinue={() => {
+                  if (currentWindow?.id === "mobile-auth") {
+                    navigateToWindow("user-dashboard")
+                  }
+                }}
+                onLockNavigation={setIsNavigationLocked}
+              />
+              {/* Overlay on active locked window to block interactions */}
+              {currentWindow && ((currentWindow.requiresAuth && !isLoggedIn) || (currentWindow.id === "mobile-auth" && isLoggedIn)) && (
+                <div className="absolute inset-0 bg-black/30 rounded-3xl z-10" />
+              )}
+            </div>
           )}
 
           {currentWindow && (
