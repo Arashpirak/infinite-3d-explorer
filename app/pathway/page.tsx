@@ -31,10 +31,10 @@ export default function PathwayPage() {
     WINDOW_REGISTRY.map((window) => ({
       ...window,
       position: { ...window.initialPosition },
-      isPinned: ["how-we-help", "features", "pricing", "user-dashboard"].includes(window.id),
+      isPinned: ["how-we-help", "features", "pricing", "chatbox", "user-dashboard"].includes(window.id),
     })),
   )
-  const [pinnedWindows, setPinnedWindows] = useState<string[]>(["how-we-help", "features", "pricing", "user-dashboard"])
+  const [pinnedWindows, setPinnedWindows] = useState<string[]>(["how-we-help", "features", "pricing", "chatbox", "user-dashboard"])
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [isNavigationLocked, setIsNavigationLocked] = useState(false)
@@ -66,6 +66,27 @@ export default function PathwayPage() {
     }
   }, [])
 
+  // Load pinned windows per user on auth change
+  useEffect(() => {
+    try {
+      const phone = localStorage.getItem("userPhone") || "guest"
+      const saved = localStorage.getItem(`pinned-windows:${phone}`)
+      if (saved) {
+        const arr = JSON.parse(saved) as string[]
+        setPinnedWindows(arr)
+        setWindows((prev) => prev.map((w) => ({ ...w, isPinned: arr.includes(w.id) })))
+      }
+    } catch {}
+  }, [isLoggedIn])
+
+  // Persist pinned windows per user
+  useEffect(() => {
+    try {
+      const phone = localStorage.getItem("userPhone") || "guest"
+      localStorage.setItem(`pinned-windows:${phone}`, JSON.stringify(pinnedWindows))
+    } catch {}
+  }, [pinnedWindows])
+
   useEffect(() => {
     const windowParam = searchParams.get("window")
     if (windowParam) {
@@ -89,6 +110,10 @@ export default function PathwayPage() {
     return windows.filter((window) => {
       if (window.requiresAuth && !isLoggedIn && window.id !== "user-dashboard") {
         return false
+      }
+      // Lock mobile-auth when logged in
+      if (window.id === "mobile-auth" && isLoggedIn) {
+        return true
       }
       return true
     })
@@ -231,49 +256,61 @@ export default function PathwayPage() {
                   </button>
                 </div>
 
-                {window.requiresAuth && !isLoggedIn && (
+                {(window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn) ? (
                   <div className="absolute -top-2 -right-2 z-10">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center bg-orange-500 text-white shadow-lg border border-white/20">
                       <Lock size={14} />
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
                   <div
                     className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg border transition-all duration-300 ${
-                      window.requiresAuth && !isLoggedIn
+                      (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
                         ? "bg-gray-300/70 text-gray-500 border-gray-400/30 cursor-not-allowed"
                         : "bg-white/90 text-[#08075C] border-[#01ADEF]/30 hover:bg-[#01ADEF] hover:text-white cursor-pointer transform hover:scale-110"
                     }`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (!isActive) {
+                      const isLocked =
+                        (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                      if (!isActive && !isLocked) {
                         navigateToWindow(window.id)
                       }
                     }}
                   >
                     {window.title}
-                    {window.requiresAuth && !isLoggedIn && " 🔒"}
+                    {((window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)) && " 🔒"}
                   </div>
                 </div>
 
                 <div
-                  className={`border-3 bg-white/10 backdrop-blur-sm rounded-lg p-8 min-w-[250px] min-h-[180px] flex flex-col justify-center items-center shadow-2xl transition-all duration-300 hover:bg-white/20 border-white/60`}
+                  className={`border-3 bg-white/10 backdrop-blur-sm rounded-lg p-8 min-w-[250px] min-h-[180px] flex flex-col justify-center items-center shadow-2xl transition-all duration-300 hover:bg-white/20 border-white/60 relative`}
                   style={{
                     boxShadow: `0 0 40px rgba(1, 173, 239, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)`,
                     borderColor: index % 2 === 0 ? "#01ADEF" : "#ffffff",
-                    filter: window.requiresAuth && !isLoggedIn ? "grayscale(50%)" : "none",
+                    filter:
+                      (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                        ? "grayscale(100%) brightness(0.8)"
+                        : "none",
                   }}
-                  onClick={() => !isActive && navigateToWindow(window.id)}
+                  onClick={() => {
+                    const isLocked =
+                      (window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)
+                    if (!isActive && !isLocked) navigateToWindow(window.id)
+                  }}
                 >
                   <div className="text-center">
                     <h3 className="font-bold text-xl mb-3 text-white">{window.title}</h3>
                     <p className="text-sm leading-relaxed text-white/90">{window.description}</p>
-                    {window.requiresAuth && !isLoggedIn && (
+                    {((window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)) && (
                       <div className="mt-3 text-orange-300 text-xs">🔒 Sign in required</div>
                     )}
                   </div>
+                  {((window.requiresAuth && !isLoggedIn) || (window.id === "mobile-auth" && isLoggedIn)) && (
+                    <div className="absolute inset-0 bg-black/30 rounded-lg pointer-events-none" />
+                  )}
                 </div>
               </div>
             </div>
