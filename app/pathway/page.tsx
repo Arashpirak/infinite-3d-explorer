@@ -372,6 +372,16 @@ export default function PathwayPage() {
 
       {/* Top Right Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-3 z-30">
+        <a href="/galaxy" title="Explore Galaxy" className="inline-block">
+          <Button
+            variant="outline"
+            size="icon"
+            className="bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm"
+          >
+            {/* Rocket icon unicode fallback */}
+            🚀
+          </Button>
+        </a>
         {!isLoggedIn ? (
           <Button
             variant="outline"

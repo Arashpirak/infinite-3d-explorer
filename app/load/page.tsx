@@ -17,9 +17,11 @@ export default function LoadHome() {
       }
     } catch {}
 
-    const t1 = setTimeout(() => {
+    let t1: any, t2: any
+    const startSequence = () => {
+      // Start fade
       setPhase("fade")
-      // Trigger music exactly at fade start
+      // Start music in parallel
       if (!hasTriedPlayRef.current && audioRef.current) {
         hasTriedPlayRef.current = true
         audioRef.current.play().catch(() => {
@@ -34,12 +36,24 @@ export default function LoadHome() {
           window.addEventListener("keydown", onFirstInteract, { once: true })
         })
       }
-    }, 300)
-    const t2 = setTimeout(() => setPhase("galaxy"), 1200)
+      // Complete to galaxy background
+      t2 = setTimeout(() => setPhase("galaxy"), 900)
+    }
+
+    const onFirst = () => {
+      window.removeEventListener("click", onFirst)
+      window.removeEventListener("keydown", onFirst)
+      t1 = setTimeout(startSequence, 0)
+    }
+
+    window.addEventListener("click", onFirst, { once: true })
+    window.addEventListener("keydown", onFirst, { once: true })
 
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
+      window.removeEventListener("click", onFirst)
+      window.removeEventListener("keydown", onFirst)
       if (audioRef.current) {
         try { audioRef.current.pause() } catch {}
         audioRef.current = null
