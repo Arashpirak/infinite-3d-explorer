@@ -15,7 +15,7 @@ export default function HomePage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    audioRef.current = new Audio("/music/background-music.mp3")
+    audioRef.current = new Audio("/music/welcome-harp.mp3")
 
     const tryPlay = async () => {
       try {
