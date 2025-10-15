@@ -138,6 +138,23 @@ export default function PathwayPage() {
     // Allow navigation even if locked (game-like behavior)
 
     setIsTransitioning(true)
+    // Play movement sound
+    try {
+      if (audioContextRef.current) {
+        const oscillator = audioContextRef.current.createOscillator()
+        const gainNode = audioContextRef.current.createGain()
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContextRef.current.destination)
+        oscillator.frequency.setValueAtTime(80, audioContextRef.current.currentTime)
+        oscillator.frequency.exponentialRampToValueAtTime(40, audioContextRef.current.currentTime + 0.5)
+        gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime)
+        gainNode.gain.linearRampToValueAtTime(0.1, audioContextRef.current.currentTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.5)
+        oscillator.type = "sine"
+        oscillator.start(audioContextRef.current.currentTime)
+        oscillator.stop(audioContextRef.current.currentTime + 0.5)
+      }
+    } catch {}
 
     setWindows((prev) =>
       prev.map((window) => {
@@ -183,6 +200,28 @@ export default function PathwayPage() {
 
     window.addEventListener("wheel", handleWheelEvent, { passive: true })
     return () => window.removeEventListener("wheel", handleWheelEvent)
+  }, [])
+
+  // Initialize audio context for movement sound (first interaction)
+  useEffect(() => {
+    const initAudio = () => {
+      try {
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+        }
+      } catch {}
+    }
+    const onInteract = () => {
+      initAudio()
+      document.removeEventListener("click", onInteract)
+      document.removeEventListener("keydown", onInteract)
+    }
+    document.addEventListener("click", onInteract)
+    document.addEventListener("keydown", onInteract)
+    return () => {
+      document.removeEventListener("click", onInteract)
+      document.removeEventListener("keydown", onInteract)
+    }
   }, [])
 
   const currentWindow = visibleWindows.find((w) => w.id === currentWindowId)
