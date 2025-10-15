@@ -12,12 +12,29 @@ export default function LoadHome() {
     try {
       audioRef.current = new Audio("/music/welcome-harp.mp3")
       if (audioRef.current) {
-        audioRef.current.volume = 0.35
+        audioRef.current.volume = 0.4
         audioRef.current.currentTime = 0
       }
     } catch {}
 
-    const t1 = setTimeout(() => setPhase("fade"), 300)
+    const t1 = setTimeout(() => {
+      setPhase("fade")
+      // Trigger music exactly at fade start
+      if (!hasTriedPlayRef.current && audioRef.current) {
+        hasTriedPlayRef.current = true
+        audioRef.current.play().catch(() => {
+          const onFirstInteract = async () => {
+            if (!audioRef.current) return
+            try { await audioRef.current.play() } finally {
+              window.removeEventListener("click", onFirstInteract)
+              window.removeEventListener("keydown", onFirstInteract)
+            }
+          }
+          window.addEventListener("click", onFirstInteract, { once: true })
+          window.addEventListener("keydown", onFirstInteract, { once: true })
+        })
+      }
+    }, 300)
     const t2 = setTimeout(() => setPhase("galaxy"), 1200)
 
     return () => {
@@ -30,30 +47,7 @@ export default function LoadHome() {
     }
   }, [])
 
-  // Attempt to play when transition starts; fall back to first interaction if blocked
-  useEffect(() => {
-    const tryPlay = async () => {
-      if (!audioRef.current || hasTriedPlayRef.current) return
-      hasTriedPlayRef.current = true
-      try {
-        await audioRef.current.play()
-      } catch {
-        const onFirstInteract = async () => {
-          if (!audioRef.current) return
-          try { await audioRef.current.play() } finally {
-            window.removeEventListener("click", onFirstInteract)
-            window.removeEventListener("keydown", onFirstInteract)
-          }
-        }
-        window.addEventListener("click", onFirstInteract, { once: true })
-        window.addEventListener("keydown", onFirstInteract, { once: true })
-      }
-    }
-
-    if (phase === "fade") {
-      void tryPlay()
-    }
-  }, [phase])
+  // (moved music trigger into the phase change timer above to ensure exact sync)
 
   // Colors
   const darkColor = "#0b1533"

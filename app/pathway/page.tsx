@@ -149,8 +149,8 @@ export default function PathwayPage() {
         oscillator.frequency.exponentialRampToValueAtTime(40, audioContextRef.current.currentTime + 0.5)
         gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime)
         // Increase peak volume slightly and sustain a bit higher
-        gainNode.gain.linearRampToValueAtTime(0.22, audioContextRef.current.currentTime + 0.05)
-        gainNode.gain.exponentialRampToValueAtTime(0.035, audioContextRef.current.currentTime + 0.5)
+        gainNode.gain.linearRampToValueAtTime(0.35, audioContextRef.current.currentTime + 0.05)
+        gainNode.gain.exponentialRampToValueAtTime(0.06, audioContextRef.current.currentTime + 0.5)
         oscillator.type = "sine"
         oscillator.start(audioContextRef.current.currentTime)
         oscillator.stop(audioContextRef.current.currentTime + 0.5)
