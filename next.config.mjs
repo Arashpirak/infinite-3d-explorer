@@ -9,6 +9,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Vercel deployment optimizations
+  output: 'standalone',
+  experimental: {
+    // Optimize for Vercel deployment
+    serverComponentsExternalPackages: ['sharp'],
+  },
   // Configure webpack to avoid eval usage in production
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
