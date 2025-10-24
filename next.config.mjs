@@ -11,10 +11,7 @@ const nextConfig = {
   },
   // Vercel deployment optimizations
   output: 'standalone',
-  experimental: {
-    // Optimize for Vercel deployment
-    serverComponentsExternalPackages: ['sharp'],
-  },
+  serverExternalPackages: ['sharp'],
   // Configure webpack to avoid eval usage in production
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
