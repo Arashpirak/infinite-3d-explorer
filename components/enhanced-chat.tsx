@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mic, MicOff, Send, Trash2, Bug } from "lucide-react"
+import { Mic, MicOff, Send, Trash2, Bug, Settings } from "lucide-react"
 import { conversationStore, type ChatMessage } from "@/utils/conversation-store"
 
 interface EnhancedChatProps {
@@ -18,6 +18,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState("")
+  const [debugMode, setDebugMode] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
@@ -89,21 +90,25 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
       console.log('🔍 DEBUG: API Response data:', data)
 
       if (data.success && data.response) {
-        // Add AI response to store with timing info
-        const timingInfo = data.debug?.timings ? 
-          `\n\n⏱️ **Performance Info:**\n` +
-          `• Provider: ${data.provider || 'unknown'}\n` +
-          `• Model: ${data.model || 'unknown'}\n` +
-          `• Parse Time: ${data.debug.timings.parseTime || 0}ms\n` +
-          `• LLM Time: ${data.debug.timings.llmTime || 0}ms\n` +
-          `• Total Time: ${data.debug.timings.totalTime || 0}ms` : ''
+        // Add AI response to store (with debug info only if debug mode is enabled)
+        let responseText = data.response
+        
+        if (debugMode && data.debug?.timings) {
+          responseText += `\n\n⏱️ **Debug Info:**\n` +
+            `• Provider: ${data.provider || 'unknown'}\n` +
+            `• Model: ${data.model || 'unknown'}\n` +
+            `• Parse Time: ${data.debug.timings.parseTime || 0}ms\n` +
+            `• LLM Time: ${data.debug.timings.llmTime || 0}ms\n` +
+            `• Total Time: ${data.debug.timings.totalTime || 0}ms`
+        }
         
         setCurrentStep("✅ دریافت پاسخ موفق")
-        conversationStore.addMessage(data.response + timingInfo, "ai")
+        conversationStore.addMessage(responseText, "ai")
         console.log('✅ DEBUG: Successfully added AI response to conversation', { 
           provider: data.provider, 
           model: data.model, 
-          timings: data.debug?.timings 
+          timings: data.debug?.timings,
+          debugMode
         })
       } else {
         // Handle error with detailed debugging
@@ -173,8 +178,16 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
       const data = await response.json()
       console.log('🔍 DEBUG: API Test Response:', data)
       
+      // Show detailed debug info when debug button is clicked
       const testMessage = data.success ? 
-        `✅ تست API موفق: ${data.message}\n⏱️ زمان پاسخ: ${responseTime}ms\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
+        `🔍 **Debug Information:**\n\n` +
+        `✅ API Status: ${data.message}\n` +
+        `⏱️ Response Time: ${responseTime}ms\n` +
+        `🌍 Environment: ${data.debug?.environment || 'unknown'}\n` +
+        `🔑 Gemini Key: ${data.debug?.hasGeminiKey ? '✅ Set' : '❌ Missing'}\n` +
+        `🔑 OpenAI Key: ${process.env.NEXT_PUBLIC_OPENAI_KEY ? '✅ Set' : '❌ Missing'}\n` +
+        `🔑 OpenRouter Key: ${process.env.NEXT_PUBLIC_OPENROUTER_KEY ? '✅ Set' : '❌ Missing'}\n\n` +
+        `📊 **Full Debug Data:**\n\`\`\`json\n${JSON.stringify(data.debug, null, 2)}\n\`\`\`` :
         `❌ تست API ناموفق: ${data.message || 'خطای نامشخص'}`
       
       setCurrentStep("✅ تست موفق")
@@ -196,7 +209,10 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
         <div className="bg-gradient-to-r from-[#08075C] to-[#01ADEF] p-4 text-white flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold">دستیار هوشمند - آرش</h3>
-            <p className="text-sm text-white/80">شریک گفتگوی هوشمند شما</p>
+            <p className="text-sm text-white/80">
+              شریک گفتگوی هوشمند شما
+              {debugMode && <span className="ml-2 text-yellow-300">🔍 Debug Mode</span>}
+            </p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -207,6 +223,15 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
               title="Test API Connection"
             >
               <Bug className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => setDebugMode(!debugMode)}
+              variant="ghost"
+              size="sm"
+              className={`text-white hover:bg-white/20 ${debugMode ? 'bg-white/20' : ''}`}
+              title={debugMode ? "Disable Debug Mode" : "Enable Debug Mode"}
+            >
+              <Settings className="h-4 w-4" />
             </Button>
             {messages.length > 0 && (
               <Button
