@@ -17,6 +17,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
   const [inputMessage, setInputMessage] = useState("")
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [currentStep, setCurrentStep] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
@@ -67,6 +68,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
 
     try {
       console.log('🔍 DEBUG: Sending message to API:', { message, historyLength: conversationStore.getConversationHistory().length })
+      setCurrentStep("📤 ارسال پیام به API...")
       
       // Send to AI API
       const response = await fetch('/api/chat', {
@@ -80,30 +82,47 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
         }),
       })
 
+      setCurrentStep("🔄 پردازش پاسخ...")
       console.log('🔍 DEBUG: API Response status:', response.status, response.statusText)
 
       const data = await response.json()
       console.log('🔍 DEBUG: API Response data:', data)
 
       if (data.success && data.response) {
-        // Add AI response to store
-        conversationStore.addMessage(data.response, "ai")
-        console.log('✅ DEBUG: Successfully added AI response to conversation')
+        // Add AI response to store with timing info
+        const timingInfo = data.debug?.timings ? 
+          `\n\n⏱️ **Performance Info:**\n` +
+          `• Provider: ${data.provider || 'unknown'}\n` +
+          `• Model: ${data.model || 'unknown'}\n` +
+          `• Parse Time: ${data.debug.timings.parseTime || 0}ms\n` +
+          `• LLM Time: ${data.debug.timings.llmTime || 0}ms\n` +
+          `• Total Time: ${data.debug.timings.totalTime || 0}ms` : ''
+        
+        setCurrentStep("✅ دریافت پاسخ موفق")
+        conversationStore.addMessage(data.response + timingInfo, "ai")
+        console.log('✅ DEBUG: Successfully added AI response to conversation', { 
+          provider: data.provider, 
+          model: data.model, 
+          timings: data.debug?.timings 
+        })
       } else {
         // Handle error with detailed debugging
         const errorMessage = data.debug ? 
           `❌ خطا در API: ${data.message}\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
           `❌ خطا در API: ${data.message || 'خطای نامشخص'}`
         
+        setCurrentStep("❌ خطا در API")
         console.error('❌ DEBUG: API Error:', data)
         conversationStore.addMessage(errorMessage, "ai")
       }
     } catch (error) {
+      setCurrentStep("❌ خطا در اتصال")
       console.error('❌ DEBUG: Network/Fetch Error:', error)
       const errorMessage = `❌ خطا در اتصال: ${error instanceof Error ? error.message : 'خطای شبکه نامشخص'}\n🔍 لطفاً کنسول مرورگر را بررسی کنید.`
       conversationStore.addMessage(errorMessage, "ai")
     } finally {
       setIsProcessing(false)
+      setCurrentStep("")
     }
   }
 
@@ -137,25 +156,36 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
 
   const testAPIConnection = async () => {
     console.log('🔍 DEBUG: Testing API connection...')
+    setCurrentStep("🔍 تست اتصال API...")
+    setIsProcessing(true)
+    
     try {
+      const startTime = Date.now()
       const response = await fetch('/api/chat', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       })
+      const endTime = Date.now()
+      const responseTime = endTime - startTime
       
       const data = await response.json()
       console.log('🔍 DEBUG: API Test Response:', data)
       
       const testMessage = data.success ? 
-        `✅ تست API موفق: ${data.message}\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
+        `✅ تست API موفق: ${data.message}\n⏱️ زمان پاسخ: ${responseTime}ms\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
         `❌ تست API ناموفق: ${data.message || 'خطای نامشخص'}`
       
+      setCurrentStep("✅ تست موفق")
       conversationStore.addMessage(testMessage, "ai")
     } catch (error) {
+      setCurrentStep("❌ تست ناموفق")
       console.error('❌ DEBUG: API Test Error:', error)
       conversationStore.addMessage(`❌ خطا در تست API: ${error instanceof Error ? error.message : 'خطای نامشخص'}`, "ai")
+    } finally {
+      setIsProcessing(false)
+      setCurrentStep("")
     }
   }
 
@@ -228,7 +258,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
           {(isTyping || isProcessing) && (
             <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-none px-4 py-3">
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 items-center">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                   <div
                     className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
@@ -238,6 +268,11 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
                     className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
                     style={{ animationDelay: "300ms" }}
                   />
+                  {currentStep && (
+                    <span className="text-xs text-gray-500 ml-2 font-mono">
+                      {currentStep}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

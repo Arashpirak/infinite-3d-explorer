@@ -19,7 +19,170 @@ function debugLog(step: string, data: any, error?: any) {
   }
 }
 
-async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{role: string, content: string}> = []) {
+// Timing utility
+class TimingTracker {
+  private timings: { [key: string]: number } = {}
+  private startTime: number = Date.now()
+
+  start(step: string) {
+    this.timings[step] = Date.now()
+    debugLog(`TIMING_START_${step}`, { step, timestamp: this.timings[step] })
+  }
+
+  end(step: string) {
+    const endTime = Date.now()
+    const duration = endTime - (this.timings[step] || this.startTime)
+    debugLog(`TIMING_END_${step}`, { step, duration: `${duration}ms` })
+    return duration
+  }
+
+  getTimings() {
+    const totalTime = Date.now() - this.startTime
+    return { ...this.timings, totalTime }
+  }
+}
+
+// OpenRouter fallback function
+async function fetchOpenRouterResponse(prompt: string, conversationHistory: Array<{role: string, content: string}> = [], timing: TimingTracker) {
+  timing.start('OPENROUTER_REQUEST')
+  debugLog('OPENROUTER_START', { prompt: prompt.substring(0, 100) + '...', historyLength: conversationHistory.length })
+  
+  try {
+    // Check if API key exists
+    if (!process.env.OPENROUTER_API_KEY) {
+      const error = 'OPENROUTER_API_KEY environment variable is not set'
+      debugLog('OPENROUTER_API_KEY_MISSING', null, error)
+      throw new Error(error)
+    }
+
+    // Available free models
+    const freeModels = [
+      "deepseek/deepseek-chat-v3-0324:free",
+      "meta-llama/llama-3.1-8b-instruct:free",
+      "google/gemini-2.5.pro:free"
+    ]
+    
+    // Rotate between models for variety
+    const model = freeModels[Math.floor(Math.random() * freeModels.length)]
+    debugLog('OPENROUTER_MODEL_SELECTED', { model })
+
+    // Convert conversation history to OpenRouter format
+    const messages = [
+      {
+        role: "system",
+        content: "شما آرش هستید، یک دستیار هوشمند مفید. شما دوستانه، دانشمند و پاسخ‌های مفیدی ارائه می‌دهید. پاسخ‌های خود را گفتگویی و جذاب نگه دارید. اگر در مورد خودتان سوال شد، می‌توانید بگویید که یک دستیار هوشمند هستید که برای کمک به کاربران در کارهای مختلف ایجاد شده‌اید. همیشه به فارسی پاسخ دهید."
+      },
+      ...conversationHistory.map(msg => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content
+      })),
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+
+    const requestBody = {
+      model: model,
+      messages: messages,
+      max_tokens: 1024,
+      temperature: 0.7
+    }
+
+    debugLog('OPENROUTER_REQUEST_BODY', { 
+      model, 
+      messageCount: messages.length,
+      promptLength: prompt.length 
+    })
+
+    const apiUrl = "https://openrouter.ai/api/v1/chat/completions"
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || "http://localhost:3000",
+        "X-Title": process.env.OPENROUTER_TITLE || "Infinite 3D Explorer"
+      },
+      body: JSON.stringify(requestBody),
+      timeout: 15000,
+    }
+
+    debugLog('OPENROUTER_MAKING_REQUEST', 'Starting fetch request to OpenRouter API')
+    const response = await fetchWithTimeout(apiUrl, requestOptions)
+    const responseTime = timing.end('OPENROUTER_REQUEST')
+    
+    debugLog('OPENROUTER_RESPONSE_RECEIVED', { 
+      status: response.status, 
+      statusText: response.statusText,
+      ok: response.ok,
+      responseTime: `${responseTime}ms`
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Could not read error response')
+      debugLog('OPENROUTER_API_ERROR', null, { 
+        status: response.status, 
+        statusText: response.statusText, 
+        errorText 
+      })
+      throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`)
+    }
+
+    timing.start('OPENROUTER_PARSE')
+    debugLog('OPENROUTER_PARSING_RESPONSE', 'Attempting to parse JSON response')
+    const data = await response.json().catch((parseError) => {
+      debugLog('OPENROUTER_JSON_PARSE_ERROR', null, parseError)
+      throw new Error(`Failed to parse OpenRouter response: ${parseError.message}`)
+    })
+    
+    const parseTime = timing.end('OPENROUTER_PARSE')
+    debugLog('OPENROUTER_RAW_RESPONSE', { 
+      hasChoices: !!data?.choices,
+      choicesLength: data?.choices?.length || 0,
+      firstChoice: data?.choices?.[0] ? 'exists' : 'missing',
+      parseTime: `${parseTime}ms`
+    })
+
+    const responseText = data?.choices?.[0]?.message?.content?.trim()
+    debugLog('OPENROUTER_EXTRACTED_TEXT', { 
+      hasText: !!responseText,
+      textLength: responseText?.length || 0,
+      textPreview: responseText?.substring(0, 100) + (responseText?.length > 100 ? '...' : '')
+    })
+    
+    if (!responseText) {
+      debugLog('OPENROUTER_NO_RESPONSE_TEXT', null, { 
+        dataStructure: JSON.stringify(data, null, 2).substring(0, 500)
+      })
+      throw new Error('No response text received from OpenRouter. Check API response structure.')
+    }
+
+    debugLog('OPENROUTER_SUCCESS', { 
+      responseLength: responseText.length,
+      model,
+      totalTime: `${responseTime + parseTime}ms`
+    })
+    
+    return { 
+      response: responseText, 
+      model: model,
+      provider: 'openrouter',
+      timings: {
+        requestTime: responseTime,
+        parseTime: parseTime,
+        totalTime: responseTime + parseTime
+      }
+    }
+  } catch (error) {
+    const totalTime = timing.end('OPENROUTER_REQUEST')
+    debugLog('OPENROUTER_REQUEST_FAILED', null, { error, totalTime: `${totalTime}ms` })
+    throw error
+  }
+}
+
+async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{role: string, content: string}> = [], timing: TimingTracker) {
+  timing.start('GEMINI_REQUEST')
   debugLog('GEMINI_START', { prompt: prompt.substring(0, 100) + '...', historyLength: conversationHistory.length })
   
   try {
@@ -100,10 +263,13 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
 
     debugLog('GEMINI_MAKING_REQUEST', 'Starting fetch request to Gemini API')
     const response = await fetchWithTimeout(apiUrl, requestOptions)
+    const responseTime = timing.end('GEMINI_REQUEST')
+    
     debugLog('GEMINI_RESPONSE_RECEIVED', { 
       status: response.status, 
       statusText: response.statusText,
       ok: response.ok,
+      responseTime: `${responseTime}ms`,
       headers: Object.fromEntries(response.headers.entries())
     })
 
@@ -117,16 +283,19 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
       throw new Error(`Gemini API returned ${response.status}: ${errorText}`)
     }
 
+    timing.start('GEMINI_PARSE')
     debugLog('GEMINI_PARSING_RESPONSE', 'Attempting to parse JSON response')
     const data = await response.json().catch((parseError) => {
       debugLog('GEMINI_JSON_PARSE_ERROR', null, parseError)
       throw new Error(`Failed to parse Gemini response: ${parseError.message}`)
     })
     
+    const parseTime = timing.end('GEMINI_PARSE')
     debugLog('GEMINI_RAW_RESPONSE', { 
       hasCandidates: !!data?.candidates,
       candidatesLength: data?.candidates?.length || 0,
-      firstCandidate: data?.candidates?.[0] ? 'exists' : 'missing'
+      firstCandidate: data?.candidates?.[0] ? 'exists' : 'missing',
+      parseTime: `${parseTime}ms`
     })
 
     const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
@@ -143,29 +312,47 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
       throw new Error('No response text received from Gemini. Check API response structure.')
     }
 
-    debugLog('GEMINI_SUCCESS', { responseLength: responseText.length })
-    return { response: responseText }
+    debugLog('GEMINI_SUCCESS', { 
+      responseLength: responseText.length,
+      totalTime: `${responseTime + parseTime}ms`
+    })
+    
+    return { 
+      response: responseText, 
+      provider: 'gemini',
+      timings: {
+        requestTime: responseTime,
+        parseTime: parseTime,
+        totalTime: responseTime + parseTime
+      }
+    }
   } catch (error) {
-    debugLog('GEMINI_REQUEST_FAILED', null, error)
+    const totalTime = timing.end('GEMINI_REQUEST')
+    debugLog('GEMINI_REQUEST_FAILED', null, { error, totalTime: `${totalTime}ms` })
     throw error
   }
 }
 
 export async function POST(request: NextRequest) {
+  const timing = new TimingTracker()
+  timing.start('TOTAL_REQUEST')
   debugLog('CHAT_API_START', 'POST request received')
   
   try {
+    timing.start('PARSE_BODY')
     debugLog('CHAT_API_PARSING_BODY', 'Attempting to parse request body')
     const body = await request.json().catch((parseError) => {
       debugLog('CHAT_API_BODY_PARSE_ERROR', null, parseError)
       throw new Error(`Failed to parse request body: ${parseError.message}`)
     })
+    const parseTime = timing.end('PARSE_BODY')
     
     debugLog('CHAT_API_BODY_PARSED', { 
       hasMessage: !!body.message,
       messageType: typeof body.message,
       hasHistory: !!body.conversationHistory,
-      historyType: Array.isArray(body.conversationHistory) ? 'array' : typeof body.conversationHistory
+      historyType: Array.isArray(body.conversationHistory) ? 'array' : typeof body.conversationHistory,
+      parseTime: `${parseTime}ms`
     })
 
     const { message, conversationHistory = [] } = body
@@ -237,18 +424,51 @@ export async function POST(request: NextRequest) {
       limitedLength: recentHistory.length
     })
 
-    debugLog('CHAT_API_CALLING_GEMINI', 'Starting Gemini API call')
-    const result = await fetchGeminiResponse(trimmedMessage, recentHistory)
-    debugLog('CHAT_API_GEMINI_SUCCESS', { responseLength: result.response.length })
-
+    timing.start('LLM_CALL')
+    debugLog('CHAT_API_CALLING_LLM', 'Starting LLM API call (Gemini first, OpenRouter fallback)')
+    
+    let result
+    let provider = 'unknown'
+    
+    try {
+      // Try Gemini first
+      result = await fetchGeminiResponse(trimmedMessage, recentHistory, timing)
+      provider = 'gemini'
+      debugLog('CHAT_API_GEMINI_SUCCESS', { responseLength: result.response.length })
+    } catch (geminiError) {
+      debugLog('CHAT_API_GEMINI_FAILED', null, geminiError)
+      debugLog('CHAT_API_FALLBACK_TO_OPENROUTER', 'Gemini failed, trying OpenRouter')
+      
+      try {
+        // Fallback to OpenRouter
+        result = await fetchOpenRouterResponse(trimmedMessage, recentHistory, timing)
+        provider = 'openrouter'
+        debugLog('CHAT_API_OPENROUTER_SUCCESS', { responseLength: result.response.length })
+      } catch (openrouterError) {
+        debugLog('CHAT_API_OPENROUTER_FAILED', null, openrouterError)
+        throw new Error(`Both Gemini and OpenRouter failed. Gemini: ${geminiError.message}, OpenRouter: ${openrouterError.message}`)
+      }
+    }
+    
+    const llmTime = timing.end('LLM_CALL')
+    const totalTime = timing.end('TOTAL_REQUEST')
+    
     const response = {
       success: true,
       response: result.response,
       timestamp: Date.now(),
+      provider: provider,
+      model: result.model || 'gemini-2.5-pro',
       debug: {
         messageLength: trimmedMessage.length,
         historyLength: recentHistory.length,
         responseLength: result.response.length,
+        timings: {
+          parseTime: parseTime,
+          llmTime: llmTime,
+          totalTime: totalTime,
+          ...result.timings
+        },
         step: 'success'
       }
     }
@@ -257,6 +477,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response)
 
   } catch (error: any) {
+    const totalTime = timing.end('TOTAL_REQUEST')
     debugLog('CHAT_API_ERROR', null, error)
     
     const errorResponse = {
@@ -267,6 +488,8 @@ export async function POST(request: NextRequest) {
         errorType: error.constructor.name,
         errorMessage: error.message,
         errorStack: error.stack?.substring(0, 500),
+        totalTime: totalTime,
+        timings: timing.getTimings(),
         step: 'catch_block'
       }
     }
