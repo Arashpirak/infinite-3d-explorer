@@ -20,6 +20,8 @@
   let resizeStart = { x: 0, y: 0, width: 0, height: 0 };
   let messages = [];
   let isProcessing = false;
+  let isRecording = false;
+  let recognition = null;
 
   // Create widget container
   const widget = document.createElement("div");
@@ -105,22 +107,7 @@
   minimizeBtn.style.alignItems = "center";
   minimizeBtn.style.justifyContent = "center";
 
-  const closeBtn = document.createElement("button");
-  closeBtn.innerHTML = "×";
-  closeBtn.style.background = "rgba(255, 255, 255, 0.2)";
-  closeBtn.style.border = "none";
-  closeBtn.style.borderRadius = "4px";
-  closeBtn.style.color = "white";
-  closeBtn.style.width = "24px";
-  closeBtn.style.height = "24px";
-  closeBtn.style.cursor = "pointer";
-  closeBtn.style.fontSize = "16px";
-  closeBtn.style.display = "flex";
-  closeBtn.style.alignItems = "center";
-  closeBtn.style.justifyContent = "center";
-
   headerButtons.appendChild(minimizeBtn);
-  headerButtons.appendChild(closeBtn);
   header.appendChild(headerTitle);
   header.appendChild(headerButtons);
 
@@ -172,9 +159,10 @@
   inputField.style.fontFamily = "inherit";
   inputField.style.resize = "none";
   inputField.style.outline = "none";
+  inputField.style.color = "#333";
 
   const sendButton = document.createElement("button");
-  sendButton.innerHTML = "📤";
+  sendButton.innerHTML = "➤";
   sendButton.style.background = "linear-gradient(90deg, #01ADEF, #0194D1)";
   sendButton.style.border = "none";
   sendButton.style.borderRadius = "50%";
@@ -182,12 +170,29 @@
   sendButton.style.height = "40px";
   sendButton.style.color = "white";
   sendButton.style.cursor = "pointer";
-  sendButton.style.fontSize = "16px";
+  sendButton.style.fontSize = "18px";
   sendButton.style.display = "flex";
   sendButton.style.alignItems = "center";
   sendButton.style.justifyContent = "center";
   sendButton.style.transition = "all 0.2s ease";
 
+  const micButton = document.createElement("button");
+  micButton.innerHTML = "🎤";
+  micButton.style.background = "rgba(255, 255, 255, 0.1)";
+  micButton.style.border = "1px solid rgba(255, 255, 255, 0.3)";
+  micButton.style.borderRadius = "50%";
+  micButton.style.width = "40px";
+  micButton.style.height = "40px";
+  micButton.style.color = "white";
+  micButton.style.cursor = "pointer";
+  micButton.style.fontSize = "16px";
+  micButton.style.display = "flex";
+  micButton.style.alignItems = "center";
+  micButton.style.justifyContent = "center";
+  micButton.style.transition = "all 0.2s ease";
+  micButton.style.marginRight = "8px";
+
+  inputArea.appendChild(micButton);
   inputArea.appendChild(inputField);
   inputArea.appendChild(sendButton);
 
@@ -214,6 +219,36 @@
   widgetContent.appendChild(resizeHandle);
 
   widget.appendChild(widgetContent);
+
+  // Initialize speech recognition
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'fa-IR'; // Persian language
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      inputField.value = transcript;
+      isRecording = false;
+      micButton.innerHTML = "🎤";
+      micButton.style.background = "rgba(255, 255, 255, 0.1)";
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      isRecording = false;
+      micButton.innerHTML = "🎤";
+      micButton.style.background = "rgba(255, 255, 255, 0.1)";
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      micButton.innerHTML = "🎤";
+      micButton.style.background = "rgba(255, 255, 255, 0.1)";
+    };
+  }
 
   // Add to page
   document.body.appendChild(toggleButton);
@@ -348,16 +383,31 @@
     isMinimized = true;
   };
 
-  closeBtn.onclick = () => {
-    widget.remove();
-    toggleButton.remove();
-  };
 
   sendButton.onclick = () => {
     const message = inputField.value.trim();
     if (message && !isProcessing) {
       inputField.value = "";
       sendMessage(message);
+    }
+  };
+
+  micButton.onclick = () => {
+    if (!recognition) {
+      alert('Speech recognition not supported in this browser');
+      return;
+    }
+
+    if (isRecording) {
+      recognition.stop();
+      isRecording = false;
+      micButton.innerHTML = "🎤";
+      micButton.style.background = "rgba(255, 255, 255, 0.1)";
+    } else {
+      recognition.start();
+      isRecording = true;
+      micButton.innerHTML = "🔴";
+      micButton.style.background = "rgba(255, 0, 0, 0.3)";
     }
   };
 
@@ -374,21 +424,32 @@
     inputField.style.height = Math.min(inputField.scrollHeight, 100) + "px";
   });
 
-  // Dragging functionality
+  // Simple dragging functionality
+  let startX, startY, initialX, initialY;
+
   header.addEventListener("mousedown", (e) => {
     isDragging = true;
-    const rect = widget.getBoundingClientRect();
-    dragOffset.x = e.clientX - rect.left;
-    dragOffset.y = e.clientY - rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    initialX = widget.offsetLeft;
+    initialY = widget.offsetTop;
     widget.style.cursor = "grabbing";
+    e.preventDefault();
   });
 
   document.addEventListener("mousemove", (e) => {
     if (isDragging) {
-      const x = e.clientX - dragOffset.x;
-      const y = e.clientY - dragOffset.y;
-      widget.style.left = Math.max(0, Math.min(x, window.innerWidth - widget.offsetWidth)) + "px";
-      widget.style.top = Math.max(0, Math.min(y, window.innerHeight - widget.offsetHeight)) + "px";
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newX = initialX + deltaX;
+      const newY = initialY + deltaY;
+      
+      // Keep widget within viewport
+      const maxX = window.innerWidth - widget.offsetWidth;
+      const maxY = window.innerHeight - widget.offsetHeight;
+      
+      widget.style.left = Math.max(0, Math.min(newX, maxX)) + "px";
+      widget.style.top = Math.max(0, Math.min(newY, maxY)) + "px";
       widget.style.right = "auto";
       widget.style.bottom = "auto";
     }

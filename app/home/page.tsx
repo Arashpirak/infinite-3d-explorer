@@ -5,8 +5,12 @@ import { Canvas } from "@react-three/fiber"
 import { Stars } from "@react-three/drei"
 import { StarWarsChat, type ChatMessage } from "@/components/star-wars-chat"
 import Script from "next/script"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 export default function HomePage() {
+  const router = useRouter()
+  
   // Simple chat demo state; replace with your real chat later
   const [messages, setMessages] = useState<ChatMessage[]>([
     { text: "Hello! How can I help you today?", sender: "ai", timestamp: Date.now() },
@@ -107,6 +111,16 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Add to My Website Button */}
+      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+        <Button
+          onClick={() => router.push('/pathway')}
+          className="bg-gradient-to-r from-[#08075C] to-[#01ADEF] hover:from-[#01ADEF] hover:to-[#08075C] text-white px-8 py-4 text-lg font-semibold rounded-full shadow-2xl border-2 border-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-105"
+        >
+          به سایت خودم اضافه کنم
+        </Button>
       </div>
 
       {/* Chatbot Widget - This is how other websites will integrate it */}
