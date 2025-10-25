@@ -377,8 +377,8 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
     debugLog('GEMINI_API_URL', apiUrl.replace(process.env.GEMINI_API_KEY, 'HIDDEN_KEY'))
 
     const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
         timeout: 8000, // Reduced timeout for faster failure detection
       }
@@ -619,8 +619,8 @@ export async function POST(request: NextRequest) {
     debugLog('CHAT_API_ERROR', null, error)
     
     const errorResponse = {
-      error: true,
-      message: 'Failed to get AI response',
+        error: true,
+        message: 'Failed to get AI response',
       details: error.message || 'Unknown error',
       debug: {
         errorType: error.constructor.name,

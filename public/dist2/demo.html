@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Widget Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 4px solid #01ADEF;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .note {
+            background: rgba(255, 193, 7, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Chatbot Widget Demo</h1>
+        
+        <div class="feature">
+            <h3>✨ Features</h3>
+            <ul>
+                <li>✅ Draggable - Move the widget anywhere</li>
+                <li>✅ Resizable - Resize from 300x400 to 600x800</li>
+                <li>✅ Minimizable - Collapse to floating icon</li>
+                <li>✅ Persian Language Support</li>
+                <li>✅ Real-time AI Chat</li>
+                <li>✅ Responsive Design</li>
+            </ul>
+        </div>
+
+        <div class="feature">
+            <h3>🎯 How to Use</h3>
+            <ol>
+                <li>Look for the robot icon (🤖) in the bottom-right corner</li>
+                <li>Click it to open the chat widget</li>
+                <li>Drag the header to move the widget</li>
+                <li>Drag the bottom-right corner to resize</li>
+                <li>Click the minimize button (−) to collapse</li>
+                <li>Type a message and press Enter or click send</li>
+            </ol>
+        </div>
+
+        <div class="feature">
+            <h3>💻 Integration Code</h3>
+            <p>To add this widget to your website, simply include this script:</p>
+            <div class="code">
+&lt;script src="https://your-domain.com/dist2/embed.js"&gt;&lt;/script&gt;
+            </div>
+            
+            <p>For customization:</p>
+            <div class="code">
+&lt;script 
+  src="https://your-domain.com/dist2/embed.js"
+  data-position="bottom-right"
+  data-custom-title="My Assistant"
+  data-custom-subtitle="How can I help?"
+  data-debug="false"&gt;
+&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>📝 Note:</strong> This demo connects to the same backend as the main chatbox window. 
+            Make sure your API endpoints are working properly.
+        </div>
+
+        <div class="feature">
+            <h3>🔧 Configuration Options</h3>
+            <ul>
+                <li><code>data-position</code> - Widget position (bottom-right, bottom-left, etc.)</li>
+                <li><code>data-custom-title</code> - Custom widget title</li>
+                <li><code>data-custom-subtitle</code> - Custom subtitle</li>
+                <li><code>data-custom-icon</code> - Custom icon URL</li>
+                <li><code>data-api-url</code> - Custom API endpoint</li>
+                <li><code>data-debug</code> - Enable debug mode</li>
+            </ul>
+        </div>
+
+        <div class="feature">
+            <h3>📱 Mobile Support</h3>
+            <p>The widget is fully responsive and works on mobile devices. 
+            On mobile, the widget automatically adjusts its size and position for optimal viewing.</p>
+        </div>
+    </div>
+
+    <!-- Load the chatbot widget -->
+    <script src="./embed.js" data-debug="true"></script>
+</body>
+</html>
