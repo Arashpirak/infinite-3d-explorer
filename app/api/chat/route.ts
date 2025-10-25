@@ -55,10 +55,10 @@ async function fetchOpenRouterResponse(prompt: string, conversationHistory: Arra
       throw new Error(error)
     }
 
-    // Available free models
+    // Available free models (verified working models)
     const freeModels = [
       "deepseek/deepseek-chat-v3-0324:free",
-      "meta-llama/llama-3.1-8b-instruct:free",
+      "microsoft/phi-3-mini-128k-instruct:free",
       "google/gemini-2.5.pro:free"
     ]
     
@@ -85,8 +85,9 @@ async function fetchOpenRouterResponse(prompt: string, conversationHistory: Arra
     const requestBody = {
       model: model,
       messages: messages,
-      max_tokens: 1024,
-      temperature: 0.7
+      max_tokens: 512, // Reduced for faster response
+      temperature: 0.7,
+      stream: false
     }
 
     debugLog('OPENROUTER_REQUEST_BODY', { 
@@ -105,7 +106,7 @@ async function fetchOpenRouterResponse(prompt: string, conversationHistory: Arra
         "X-Title": process.env.OPENROUTER_TITLE || "Infinite 3D Explorer"
       },
       body: JSON.stringify(requestBody),
-      timeout: 15000,
+      timeout: 8000, // Reduced timeout for faster failure detection
     }
 
     debugLog('OPENROUTER_MAKING_REQUEST', 'Starting fetch request to OpenRouter API')
@@ -217,7 +218,7 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 512, // Reduced for faster response
       },
       safetySettings: [
         {
@@ -251,9 +252,9 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-      timeout: 15000,
-    }
+        body: JSON.stringify(requestBody),
+        timeout: 8000, // Reduced timeout for faster failure detection
+      }
 
     debugLog('GEMINI_REQUEST_OPTIONS', { 
       method: requestOptions.method, 
@@ -425,28 +426,28 @@ export async function POST(request: NextRequest) {
     })
 
     timing.start('LLM_CALL')
-    debugLog('CHAT_API_CALLING_LLM', 'Starting LLM API call (Gemini first, OpenRouter fallback)')
+    debugLog('CHAT_API_CALLING_LLM', 'Starting LLM API call (OpenRouter first, Gemini fallback)')
     
     let result
     let provider = 'unknown'
     
     try {
-      // Try Gemini first
-      result = await fetchGeminiResponse(trimmedMessage, recentHistory, timing)
-      provider = 'gemini'
-      debugLog('CHAT_API_GEMINI_SUCCESS', { responseLength: result.response.length })
-    } catch (geminiError) {
-      debugLog('CHAT_API_GEMINI_FAILED', null, geminiError)
-      debugLog('CHAT_API_FALLBACK_TO_OPENROUTER', 'Gemini failed, trying OpenRouter')
+      // Try OpenRouter first (more reliable)
+      result = await fetchOpenRouterResponse(trimmedMessage, recentHistory, timing)
+      provider = 'openrouter'
+      debugLog('CHAT_API_OPENROUTER_SUCCESS', { responseLength: result.response.length })
+    } catch (openrouterError) {
+      debugLog('CHAT_API_OPENROUTER_FAILED', null, openrouterError)
+      debugLog('CHAT_API_FALLBACK_TO_GEMINI', 'OpenRouter failed, trying Gemini')
       
       try {
-        // Fallback to OpenRouter
-        result = await fetchOpenRouterResponse(trimmedMessage, recentHistory, timing)
-        provider = 'openrouter'
-        debugLog('CHAT_API_OPENROUTER_SUCCESS', { responseLength: result.response.length })
-      } catch (openrouterError) {
-        debugLog('CHAT_API_OPENROUTER_FAILED', null, openrouterError)
-        throw new Error(`Both Gemini and OpenRouter failed. Gemini: ${geminiError.message}, OpenRouter: ${openrouterError.message}`)
+        // Fallback to Gemini
+        result = await fetchGeminiResponse(trimmedMessage, recentHistory, timing)
+        provider = 'gemini'
+        debugLog('CHAT_API_GEMINI_SUCCESS', { responseLength: result.response.length })
+      } catch (geminiError) {
+        debugLog('CHAT_API_GEMINI_FAILED', null, geminiError)
+        throw new Error(`Both OpenRouter and Gemini failed. OpenRouter: ${openrouterError.message}, Gemini: ${geminiError.message}`)
       }
     }
     

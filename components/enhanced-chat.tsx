@@ -68,7 +68,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
 
     try {
       console.log('🔍 DEBUG: Sending message to API:', { message, historyLength: conversationStore.getConversationHistory().length })
-      setCurrentStep("📤 ارسال پیام به API...")
+      setCurrentStep("📤 ارسال پیام به OpenRouter...")
       
       // Send to AI API
       const response = await fetch('/api/chat', {
@@ -82,7 +82,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
         }),
       })
 
-      setCurrentStep("🔄 پردازش پاسخ...")
+      setCurrentStep("🔄 پردازش پاسخ از AI...")
       console.log('🔍 DEBUG: API Response status:', response.status, response.statusText)
 
       const data = await response.json()
