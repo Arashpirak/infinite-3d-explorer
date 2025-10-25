@@ -68,7 +68,7 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
 
     try {
       console.log('🔍 DEBUG: Sending message to API:', { message, historyLength: conversationStore.getConversationHistory().length })
-      setCurrentStep("📤 ارسال پیام به OpenRouter...")
+      setCurrentStep("📤 ارسال پیام به AI...")
       
       // Send to AI API
       const response = await fetch('/api/chat', {
