@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mic, MicOff, Send, Trash2 } from "lucide-react"
+import { Mic, MicOff, Send, Trash2, Bug } from "lucide-react"
 import { conversationStore, type ChatMessage } from "@/utils/conversation-store"
 
 interface EnhancedChatProps {
@@ -66,6 +66,8 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
     conversationStore.addMessage(message, "user")
 
     try {
+      console.log('🔍 DEBUG: Sending message to API:', { message, historyLength: conversationStore.getConversationHistory().length })
+      
       // Send to AI API
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -78,24 +80,28 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
         }),
       })
 
+      console.log('🔍 DEBUG: API Response status:', response.status, response.statusText)
+
       const data = await response.json()
+      console.log('🔍 DEBUG: API Response data:', data)
 
       if (data.success && data.response) {
         // Add AI response to store
         conversationStore.addMessage(data.response, "ai")
+        console.log('✅ DEBUG: Successfully added AI response to conversation')
       } else {
-        // Handle error
-        conversationStore.addMessage(
-          "متأسفانه در حال حاضر مشکل دارم. لطفاً دوباره تلاش کنید.",
-          "ai"
-        )
+        // Handle error with detailed debugging
+        const errorMessage = data.debug ? 
+          `❌ خطا در API: ${data.message}\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
+          `❌ خطا در API: ${data.message || 'خطای نامشخص'}`
+        
+        console.error('❌ DEBUG: API Error:', data)
+        conversationStore.addMessage(errorMessage, "ai")
       }
     } catch (error) {
-      console.error('Error sending message:', error)
-      conversationStore.addMessage(
-        "متأسفانه در اتصال مشکل دارم. لطفاً اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.",
-        "ai"
-      )
+      console.error('❌ DEBUG: Network/Fetch Error:', error)
+      const errorMessage = `❌ خطا در اتصال: ${error instanceof Error ? error.message : 'خطای شبکه نامشخص'}\n🔍 لطفاً کنسول مرورگر را بررسی کنید.`
+      conversationStore.addMessage(errorMessage, "ai")
     } finally {
       setIsProcessing(false)
     }
@@ -129,6 +135,30 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
     }
   }
 
+  const testAPIConnection = async () => {
+    console.log('🔍 DEBUG: Testing API connection...')
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const data = await response.json()
+      console.log('🔍 DEBUG: API Test Response:', data)
+      
+      const testMessage = data.success ? 
+        `✅ تست API موفق: ${data.message}\n🔍 جزئیات: ${JSON.stringify(data.debug, null, 2)}` :
+        `❌ تست API ناموفق: ${data.message || 'خطای نامشخص'}`
+      
+      conversationStore.addMessage(testMessage, "ai")
+    } catch (error) {
+      console.error('❌ DEBUG: API Test Error:', error)
+      conversationStore.addMessage(`❌ خطا در تست API: ${error instanceof Error ? error.message : 'خطای نامشخص'}`, "ai")
+    }
+  }
+
   return (
     <div className="w-full max-w-lg mx-auto">
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
@@ -138,16 +168,27 @@ export function EnhancedChat({ messages, isTyping = false, onSendMessage, onClea
             <h3 className="text-lg font-semibold">دستیار هوشمند - آرش</h3>
             <p className="text-sm text-white/80">شریک گفتگوی هوشمند شما</p>
           </div>
-          {messages.length > 0 && (
+          <div className="flex gap-2">
             <Button
-              onClick={clearChat}
+              onClick={testAPIConnection}
               variant="ghost"
               size="sm"
               className="text-white hover:bg-white/20"
+              title="Test API Connection"
             >
-              <Trash2 className="h-4 w-4" />
+              <Bug className="h-4 w-4" />
             </Button>
-          )}
+            {messages.length > 0 && (
+              <Button
+                onClick={clearChat}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Messages Container */}
