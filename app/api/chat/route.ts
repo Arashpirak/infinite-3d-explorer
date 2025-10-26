@@ -461,6 +461,29 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
   }
 }
 
+// Handle CORS preflight requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const allowedOrigins = [
+    'https://www.atiradco.com',
+    'https://www.atiradco.ir', 
+    'https://solarkhone.ir',
+    'https://arashway.ir'
+  ];
+
+  const response = new NextResponse(null, { status: 200 });
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Max-Age', '86400');
+  }
+  
+  return response;
+}
+
 export async function POST(request: NextRequest) {
   const timing = new TimingTracker()
   timing.start('TOTAL_REQUEST')
@@ -612,7 +635,23 @@ export async function POST(request: NextRequest) {
     }
 
     debugLog('CHAT_API_RESPONSE_SUCCESS', response)
-    return NextResponse.json(response)
+    
+    // Add CORS headers to the response
+    const nextResponse = NextResponse.json(response);
+    const origin = request.headers.get('origin');
+    const allowedOrigins = [
+      'https://www.atiradco.com',
+      'https://www.atiradco.ir', 
+      'https://solarkhone.ir',
+      'https://arashway.ir'
+    ];
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      nextResponse.headers.set('Access-Control-Allow-Origin', origin);
+      nextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+    
+    return nextResponse;
 
   } catch (error: any) {
     const totalTime = timing.end('TOTAL_REQUEST')
@@ -633,12 +672,28 @@ export async function POST(request: NextRequest) {
     }
 
     debugLog('CHAT_API_ERROR_RESPONSE', errorResponse)
-    return NextResponse.json(errorResponse, { status: 500 })
+    
+    // Add CORS headers to error response
+    const errorNextResponse = NextResponse.json(errorResponse, { status: 500 });
+    const origin = request.headers.get('origin');
+    const allowedOrigins = [
+      'https://www.atiradco.com',
+      'https://www.atiradco.ir', 
+      'https://solarkhone.ir',
+      'https://arashway.ir'
+    ];
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      errorNextResponse.headers.set('Access-Control-Allow-Origin', origin);
+      errorNextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+    
+    return errorNextResponse;
   }
 }
 
 // Handle GET requests with a simple test
-export async function GET() {
+export async function GET(request: NextRequest) {
   debugLog('CHAT_API_GET', 'GET request received')
   
   const response = {
@@ -653,5 +708,21 @@ export async function GET() {
   }
   
   debugLog('CHAT_API_GET_RESPONSE', response)
-  return NextResponse.json(response)
+  
+  // Add CORS headers to GET response
+  const nextResponse = NextResponse.json(response);
+  const origin = request.headers.get('origin');
+  const allowedOrigins = [
+    'https://www.atiradco.com',
+    'https://www.atiradco.ir', 
+    'https://solarkhone.ir',
+    'https://arashway.ir'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    nextResponse.headers.set('Access-Control-Allow-Origin', origin);
+    nextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  return nextResponse;
 }
