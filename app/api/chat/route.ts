@@ -677,9 +677,9 @@ export async function POST(request: NextRequest) {
           result = await fetchGeminiResponse(trimmedMessage, recentHistory, timing)
           provider = 'gemini'
           debugLog('CHAT_API_GEMINI_SUCCESS', { responseLength: result.response.length })
-        } catch (geminiError) {
+        } catch (geminiError: any) {
           debugLog('CHAT_API_GEMINI_FAILED', null, geminiError)
-          throw new Error(`All APIs failed. OpenAI: ${openaiError.message}, OpenRouter: ${openrouterError.message}, Gemini: ${geminiError.message}`)
+          throw new Error(`All APIs failed. OpenAI: ${(openaiError as any).message}, OpenRouter: ${(openrouterError as any).message}, Gemini: ${geminiError.message}`)
         }
       }
     }
@@ -692,7 +692,7 @@ export async function POST(request: NextRequest) {
       response: result.response,
       timestamp: Date.now(),
       provider: provider,
-      model: result.model || 'gemini-2.5-pro',
+      model: (result as any).model || 'gemini-2.5-pro',
       debug: {
         messageLength: trimmedMessage.length,
         historyLength: recentHistory.length,
@@ -701,7 +701,7 @@ export async function POST(request: NextRequest) {
           parseTime: parseTime,
           llmTime: llmTime,
           totalTime: totalTime,
-          ...result.timings
+          ...(result as any).timings
         },
         step: 'success'
       }
@@ -716,7 +716,7 @@ export async function POST(request: NextRequest) {
     
     // Add CORS headers to the response
     const nextResponse = NextResponse.json(response);
-    const origin = request.headers.get('origin');
+    const requestOrigin = request.headers.get('origin');
     const allowedOrigins = [
       'https://www.atiradco.com',
       'https://www.atiradco.ir', 
@@ -724,8 +724,8 @@ export async function POST(request: NextRequest) {
       'https://arashway.ir'
     ];
     
-    if (origin && allowedOrigins.includes(origin)) {
-      nextResponse.headers.set('Access-Control-Allow-Origin', origin);
+    if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+      nextResponse.headers.set('Access-Control-Allow-Origin', requestOrigin);
       nextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     }
     
@@ -753,7 +753,7 @@ export async function POST(request: NextRequest) {
     
     // Add CORS headers to error response
     const errorNextResponse = NextResponse.json(errorResponse, { status: 500 });
-    const origin = request.headers.get('origin');
+    const errorOrigin = request.headers.get('origin');
     const allowedOrigins = [
       'https://www.atiradco.com',
       'https://www.atiradco.ir', 
@@ -761,8 +761,8 @@ export async function POST(request: NextRequest) {
       'https://arashway.ir'
     ];
     
-    if (origin && allowedOrigins.includes(origin)) {
-      errorNextResponse.headers.set('Access-Control-Allow-Origin', origin);
+    if (errorOrigin && allowedOrigins.includes(errorOrigin)) {
+      errorNextResponse.headers.set('Access-Control-Allow-Origin', errorOrigin);
       errorNextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     }
     
@@ -789,7 +789,7 @@ export async function GET(request: NextRequest) {
   
   // Add CORS headers to GET response
   const nextResponse = NextResponse.json(response);
-  const origin = request.headers.get('origin');
+  const getOrigin = request.headers.get('origin');
   const allowedOrigins = [
     'https://www.atiradco.com',
     'https://www.atiradco.ir', 
@@ -797,8 +797,8 @@ export async function GET(request: NextRequest) {
     'https://arashway.ir'
   ];
   
-  if (origin && allowedOrigins.includes(origin)) {
-    nextResponse.headers.set('Access-Control-Allow-Origin', origin);
+  if (getOrigin && allowedOrigins.includes(getOrigin)) {
+    nextResponse.headers.set('Access-Control-Allow-Origin', getOrigin);
     nextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
   }
   
