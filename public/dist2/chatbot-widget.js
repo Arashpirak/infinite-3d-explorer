@@ -340,9 +340,19 @@
     addTypingIndicator();
 
     try {
+      // Get API key from script data attribute
+      const apiKey = thisScript?.dataset?.apiKey || thisScript?.getAttribute('data-api-key');
+      
+      if (!apiKey) {
+        throw new Error('API key is required');
+      }
+
       const response = await fetch(baseOrigin + "/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey
+        },
         body: JSON.stringify({
           message: message,
           conversationHistory: messages

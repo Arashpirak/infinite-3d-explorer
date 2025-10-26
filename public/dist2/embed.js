@@ -6,6 +6,7 @@
     theme: 'default', // 'default', 'dark', 'light'
     language: 'fa', // 'fa' (Persian), 'en' (English)
     apiUrl: null, // Will be auto-detected if not provided
+    apiKey: null, // API key for authentication
     customIcon: null, // Custom icon URL
     customTitle: null, // Custom title
     customSubtitle: null, // Custom subtitle
@@ -24,6 +25,7 @@
     if (thisScript.dataset.theme) config.theme = thisScript.dataset.theme;
     if (thisScript.dataset.language) config.language = thisScript.dataset.language;
     if (thisScript.dataset.apiUrl) config.apiUrl = thisScript.dataset.apiUrl;
+    if (thisScript.dataset.apiKey) config.apiKey = thisScript.dataset.apiKey;
     if (thisScript.dataset.customIcon) config.customIcon = thisScript.dataset.customIcon;
     if (thisScript.dataset.customTitle) config.customTitle = thisScript.dataset.customTitle;
     if (thisScript.dataset.customSubtitle) config.customSubtitle = thisScript.dataset.customSubtitle;
@@ -51,6 +53,7 @@
 
   // Add configuration to the script
   widgetScript.setAttribute('data-config', JSON.stringify(config));
+  widgetScript.setAttribute('data-api-key', config.apiKey || '');
 
   // Add to page
   document.head.appendChild(widgetScript);

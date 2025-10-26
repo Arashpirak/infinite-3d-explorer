@@ -1,4 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@/generated/prisma'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+// Verify API key and get domain info
+async function verifyApiKey(apiKey: string) {
+  try {
+    const domain = await prisma.userDomain.findFirst({
+      where: { status: 'active' },
+      include: { user: true }
+    })
+
+    if (!domain) return null
+
+    // Check if API key matches
+    const isValid = await bcrypt.compare(apiKey, domain.apiKeyHash)
+    if (!isValid) return null
+
+    return domain
+  } catch (error) {
+    console.error('Error verifying API key:', error)
+    return null
+  }
+}
+
+// Record API usage
+async function recordUsage(domainId: string, tokensIn: number, tokensOut: number, cost: number = 0) {
+  try {
+    await prisma.domainApiUsage.create({
+      data: {
+        domainId,
+        endpoint: '/api/chat',
+        tokensIn,
+        tokensOut,
+        cost
+      }
+    })
+  } catch (error) {
+    console.error('Error recording usage:', error)
+  }
+}
 
 async function fetchWithTimeout(resource: string, options: any) {
   const { timeout = 15000 } = options || {}
@@ -490,6 +532,34 @@ export async function POST(request: NextRequest) {
   debugLog('CHAT_API_START', 'POST request received')
   
   try {
+    // Check API key authentication
+    const apiKey = request.headers.get('x-api-key') || request.headers.get('authorization')?.replace('Bearer ', '')
+    
+    if (!apiKey) {
+      debugLog('CHAT_API_NO_API_KEY', null, 'No API key provided')
+      return NextResponse.json({ 
+        error: true, 
+        message: 'API key is required',
+        debug: { step: 'api_key_validation' }
+      }, { status: 401 })
+    }
+
+    // Verify API key
+    const domain = await verifyApiKey(apiKey)
+    if (!domain) {
+      debugLog('CHAT_API_INVALID_API_KEY', null, 'Invalid API key')
+      return NextResponse.json({ 
+        error: true, 
+        message: 'Invalid API key',
+        debug: { step: 'api_key_verification' }
+      }, { status: 401 })
+    }
+
+    debugLog('CHAT_API_AUTHENTICATED', { 
+      domain: domain.domain, 
+      userId: domain.userId 
+    })
+
     timing.start('PARSE_BODY')
     debugLog('CHAT_API_PARSING_BODY', 'Attempting to parse request body')
     const body = await request.json().catch((parseError) => {
@@ -635,6 +705,11 @@ export async function POST(request: NextRequest) {
     }
 
     debugLog('CHAT_API_RESPONSE_SUCCESS', response)
+    
+    // Record usage
+    const tokensIn = trimmedMessage.length
+    const tokensOut = result.response.length
+    await recordUsage(domain.id, tokensIn, tokensOut)
     
     // Add CORS headers to the response
     const nextResponse = NextResponse.json(response);

@@ -31,6 +31,7 @@ model User {
   invites      Invite[]
   chatbotProjects ChatbotProject[]
   billingCustomer BillingCustomer?
+  domains       UserDomain[]
 
   @@map("users")
 }
@@ -126,8 +127,43 @@ model ChatbotProject {
   owner     User        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   apiUsage  ApiUsage[]
   subscription Subscription?
+  domains   UserDomain[]
 
   @@map("chatbot_projects")
+}
+
+model UserDomain {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String?
+  domain      String   // e.g., "example.com", "www.example.com"
+  apiKeyHash  String   // Unique API key for this domain
+  status      String   @default("active") // active, suspended, deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   ChatbotProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  apiUsage  DomainApiUsage[]
+
+  @@unique([domain, apiKeyHash])
+  @@map("user_domains")
+}
+
+model DomainApiUsage {
+  id        String   @id @default(cuid())
+  domainId  String
+  endpoint  String
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  cost      Decimal  @default(0) @db.Decimal(10, 6)
+  timestamp DateTime @default(now())
+
+  // Relations
+  domain UserDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@map("domain_api_usage")
 }
 
 model ApiUsage {
