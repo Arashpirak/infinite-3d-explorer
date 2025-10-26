@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
-import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 
 const prisma = new PrismaClient()
-
-// Generate a unique API key
-function generateApiKey(): string {
-  return 'cb_' + crypto.randomBytes(32).toString('hex')
-}
-
-// Hash API key for storage
-async function hashApiKey(apiKey: string): Promise<string> {
-  return bcrypt.hash(apiKey, 12)
-}
-
-// Verify API key
-async function verifyApiKey(apiKey: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(apiKey, hash)
-}
 
 // Get user from session token
 async function getUserFromToken(token: string) {
@@ -121,16 +104,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Domain already exists' }, { status: 409 })
     }
 
-    // Generate API key
-    const apiKey = generateApiKey()
-    const apiKeyHash = await hashApiKey(apiKey)
-
     // Create domain
     const newDomain = await prisma.userDomain.create({
       data: {
         userId: user.id,
         domain: domain.toLowerCase(),
-        apiKeyHash,
         status: 'active'
       }
     })
@@ -140,7 +118,6 @@ export async function POST(request: NextRequest) {
       domain: {
         id: newDomain.id,
         domain: newDomain.domain,
-        apiKey: apiKey, // Return the plain API key only once
         status: newDomain.status,
         createdAt: newDomain.createdAt
       }

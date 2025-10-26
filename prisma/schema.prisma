@@ -137,7 +137,6 @@ model UserDomain {
   userId      String
   projectId   String?
   domain      String   // e.g., "example.com", "www.example.com"
-  apiKeyHash  String   // Unique API key for this domain
   status      String   @default("active") // active, suspended, deleted
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -147,7 +146,7 @@ model UserDomain {
   project   ChatbotProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   apiUsage  DomainApiUsage[]
 
-  @@unique([domain, apiKeyHash])
+  @@unique([userId, domain])
   @@map("user_domains")
 }
 

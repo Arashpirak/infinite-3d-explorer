@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
-import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-// Verify API key and get domain info
-async function verifyApiKey(apiKey: string) {
+// Verify domain origin and get domain info
+async function verifyDomain(origin: string) {
   try {
-    const domain = await prisma.userDomain.findFirst({
-      where: { status: 'active' },
+    if (!origin) return null
+
+    // Extract domain from origin (remove protocol)
+    const domain = origin.replace(/^https?:\/\//, '').toLowerCase()
+    
+    // Find registered domain
+    const registeredDomain = await prisma.userDomain.findFirst({
+      where: { 
+        domain: domain,
+        status: 'active' 
+      },
       include: { user: true }
     })
 
-    if (!domain) return null
-
-    // Check if API key matches
-    const isValid = await bcrypt.compare(apiKey, domain.apiKeyHash)
-    if (!isValid) return null
-
-    return domain
+    return registeredDomain
   } catch (error) {
-    console.error('Error verifying API key:', error)
+    console.error('Error verifying domain:', error)
     return null
   }
 }
@@ -532,32 +534,33 @@ export async function POST(request: NextRequest) {
   debugLog('CHAT_API_START', 'POST request received')
   
   try {
-    // Check API key authentication
-    const apiKey = request.headers.get('x-api-key') || request.headers.get('authorization')?.replace('Bearer ', '')
+    // Check domain origin authentication
+    const origin = request.headers.get('origin')
     
-    if (!apiKey) {
-      debugLog('CHAT_API_NO_API_KEY', null, 'No API key provided')
+    if (!origin) {
+      debugLog('CHAT_API_NO_ORIGIN', null, 'No origin header provided')
       return NextResponse.json({ 
         error: true, 
-        message: 'API key is required',
-        debug: { step: 'api_key_validation' }
+        message: 'Origin header is required',
+        debug: { step: 'origin_validation' }
       }, { status: 401 })
     }
 
-    // Verify API key
-    const domain = await verifyApiKey(apiKey)
+    // Verify domain
+    const domain = await verifyDomain(origin)
     if (!domain) {
-      debugLog('CHAT_API_INVALID_API_KEY', null, 'Invalid API key')
+      debugLog('CHAT_API_INVALID_DOMAIN', null, `Invalid domain: ${origin}`)
       return NextResponse.json({ 
         error: true, 
-        message: 'Invalid API key',
-        debug: { step: 'api_key_verification' }
+        message: 'Domain not registered or inactive',
+        debug: { step: 'domain_verification', origin }
       }, { status: 401 })
     }
 
     debugLog('CHAT_API_AUTHENTICATED', { 
       domain: domain.domain, 
-      userId: domain.userId 
+      userId: domain.userId,
+      origin 
     })
 
     timing.start('PARSE_BODY')
