@@ -509,21 +509,19 @@ async function fetchGeminiResponse(prompt: string, conversationHistory: Array<{r
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
-  const allowedOrigins = [
-    'https://www.atiradco.com',
-    'https://www.atiradco.ir', 
-    'https://solarkhone.ir',
-    'https://arashway.ir'
-  ];
-
+  
   const response = new NextResponse(null, { status: 200 });
   
-  if (origin && allowedOrigins.includes(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
-    response.headers.set('Access-Control-Max-Age', '86400');
+  if (origin) {
+    // Check if origin domain is registered
+    const allow = await isDomainAllowed(origin)
+    if (allow.ok) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      response.headers.set('Access-Control-Allow-Credentials', 'true');
+      response.headers.set('Access-Control-Max-Age', '86400');
+    }
   }
   
   return response;
@@ -724,14 +722,8 @@ export async function POST(request: NextRequest) {
     // Add CORS headers to the response
     const nextResponse = NextResponse.json(response);
     const requestOrigin = request.headers.get('origin');
-    const allowedOrigins = [
-      'https://www.atiradco.com',
-      'https://www.atiradco.ir', 
-      'https://solarkhone.ir',
-      'https://arashway.ir'
-    ];
     
-    if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    if (requestOrigin && allow.ok) {
       nextResponse.headers.set('Access-Control-Allow-Origin', requestOrigin);
       nextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     }
@@ -761,16 +753,14 @@ export async function POST(request: NextRequest) {
     // Add CORS headers to error response
     const errorNextResponse = NextResponse.json(errorResponse, { status: 500 });
     const errorOrigin = request.headers.get('origin');
-    const allowedOrigins = [
-      'https://www.atiradco.com',
-      'https://www.atiradco.ir', 
-      'https://solarkhone.ir',
-      'https://arashway.ir'
-    ];
     
-    if (errorOrigin && allowedOrigins.includes(errorOrigin)) {
-      errorNextResponse.headers.set('Access-Control-Allow-Origin', errorOrigin);
-      errorNextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+    if (errorOrigin) {
+      // Check if origin domain is registered for error responses too
+      const allow = await isDomainAllowed(errorOrigin)
+      if (allow.ok) {
+        errorNextResponse.headers.set('Access-Control-Allow-Origin', errorOrigin);
+        errorNextResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+      }
     }
     
     return errorNextResponse;
