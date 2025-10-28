@@ -79,8 +79,17 @@ async function readJsonSafe<T>(filePath: string, fallback: T): Promise<T> {
 }
 
 async function writeJson(filePath: string, data: any) {
-  await ensureDirs()
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
+  try {
+    await ensureDirs()
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8')
+  } catch (error: any) {
+    // Handle read-only filesystem (e.g., Vercel serverless)
+    if (error.code === 'EROFS' || error.code === 'EACCES') {
+      console.warn('Cannot write to filesystem (read-only), skipping registry file update:', filePath)
+      return
+    }
+    throw error
+  }
 }
 
 export async function loadCodedRegistry(): Promise<CodedEntry[]> {
@@ -109,59 +118,88 @@ export async function upsertDomainInRegistries(userId: string, domain: string, s
   const now = Date.now()
 
   // coded registry
-  const coded = await loadCodedRegistry()
-  const idx = coded.findIndex(e => e.c === code)
-  if (idx >= 0) coded[idx] = { c: code, u: userId, s: status, t: now }
-  else coded.push({ c: code, u: userId, s: status, t: now })
-  await saveCodedRegistry(coded)
+  try {
+    const coded = await loadCodedRegistry()
+    const idx = coded.findIndex(e => e.c === code)
+    if (idx >= 0) coded[idx] = { c: code, u: userId, s: status, t: now }
+    else coded.push({ c: code, u: userId, s: status, t: now })
+    await saveCodedRegistry(coded)
+  } catch (error) {
+    console.warn('Failed to update coded registry:', error)
+  }
 
   // cache registry
-  const cache = await loadCacheRegistry()
-  const cidx = cache.entries.findIndex(e => e.d === d)
-  if (status === 'active') {
-    if (cidx >= 0) cache.entries[cidx] = { ...cache.entries[cidx], u: userId, s: 'active', lastSeen: now }
-    else cache.entries.push({ d, u: userId, s: 'active', lastSeen: now, addedAt: now })
-  } else {
-    if (cidx >= 0) cache.entries.splice(cidx, 1)
+  try {
+    const cache = await loadCacheRegistry()
+    const cidx = cache.entries.findIndex(e => e.d === d)
+    if (status === 'active') {
+      if (cidx >= 0) cache.entries[cidx] = { ...cache.entries[cidx], u: userId, s: 'active', lastSeen: now }
+      else cache.entries.push({ d, u: userId, s: 'active', lastSeen: now, addedAt: now })
+    } else {
+      if (cidx >= 0) cache.entries.splice(cidx, 1)
+    }
+    await saveCacheRegistry(cache)
+  } catch (error) {
+    console.warn('Failed to update cache registry:', error)
   }
-  await saveCacheRegistry(cache)
 }
 
 export async function isDomainAllowed(domainOrOrigin: string): Promise<{ ok: boolean, userId?: string, domain?: string }> {
   const d = normalizeOriginToDomain(domainOrOrigin) || normalizeDomain(domainOrOrigin)
   if (!d) return { ok: false }
 
-  // 1) cache
-  const cache = await loadCacheRegistry()
-  const now = Date.now()
-  const ce = cache.entries.find(e => e.d === d && e.s === 'active')
-  if (ce) {
-    ce.lastSeen = now
-    await saveCacheRegistry(cache)
-    return { ok: true, userId: ce.u, domain: d }
+  // 1) Try cache first (if filesystem is writable)
+  try {
+    const cache = await loadCacheRegistry()
+    const now = Date.now()
+    const ce = cache.entries.find(e => e.d === d && e.s === 'active')
+    if (ce) {
+      ce.lastSeen = now
+      try {
+        await saveCacheRegistry(cache)
+      } catch {
+        // Ignore filesystem write errors, continue with cached result
+      }
+      return { ok: true, userId: ce.u, domain: d }
+    }
+  } catch {
+    // Cache read failed, continue to other checks
   }
 
-  // 2) coded
+  // 2) Try coded registry (if filesystem is readable)
   try {
     const code = computeDomainCode(d)
     const coded = await loadCodedRegistry()
     const entry = coded.find(e => e.c === code && e.s === 'active')
     if (entry) {
-      // hydrate cache
-      cache.entries.push({ d, u: entry.u, s: 'active', lastSeen: now, addedAt: now })
-      await saveCacheRegistry(cache)
+      // Try to hydrate cache, but don't fail if filesystem is read-only
+      try {
+        const cache = await loadCacheRegistry()
+        cache.entries.push({ d, u: entry.u, s: 'active', lastSeen: Date.now(), addedAt: Date.now() })
+        await saveCacheRegistry(cache)
+      } catch {
+        // Ignore cache write errors
+      }
       return { ok: true, userId: entry.u, domain: d }
     }
   } catch {
-    // missing salt → skip coded check
+    // missing salt or filesystem read error → skip coded check
   }
 
-  // 3) DB fallback
-  const dbDomain = await db.userDomain.findFirst({ where: { domain: d, status: 'active' } })
-  if (dbDomain) {
-    // mirror into registries
-    await upsertDomainInRegistries(dbDomain.userId, d, 'active')
-    return { ok: true, userId: dbDomain.userId, domain: d }
+  // 3) DB fallback (always works)
+  try {
+    const dbDomain = await db.userDomain.findFirst({ where: { domain: d, status: 'active' } })
+    if (dbDomain) {
+      // Try to mirror into registries, but don't fail if filesystem is read-only
+      try {
+        await upsertDomainInRegistries(dbDomain.userId, d, 'active')
+      } catch {
+        // Ignore registry sync errors
+      }
+      return { ok: true, userId: dbDomain.userId, domain: d }
+    }
+  } catch (error) {
+    console.error('Database fallback failed:', error)
   }
 
   return { ok: false }
