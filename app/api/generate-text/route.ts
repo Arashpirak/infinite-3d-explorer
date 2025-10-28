@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
+import { isDomainAllowed } from '@/lib/domain-registry'
 
 export async function POST(request: Request) {
   try {
+    const origin = (request as any).headers?.get?.('origin') || ''
+    const allow = await isDomainAllowed(origin)
+    if (!allow.ok) {
+      return NextResponse.json({ success: false, error: 'Domain not registered or inactive.' }, { status: 401 })
+    }
+
     // This is a placeholder. In a real application, you would use an LLM.
     // For now, we'll return a static, friendly response.
     const { prompt } = await request.json();

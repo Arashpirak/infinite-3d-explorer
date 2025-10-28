@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
-
-const prisma = new PrismaClient()
+import { db } from '@/lib/db'
+import { upsertDomainInRegistries } from '@/lib/domain-registry'
 
 // Get user from session token
 async function getUserFromToken(token: string) {
   try {
-    const session = await prisma.session.findFirst({
+    const session = await db.session.findFirst({
       where: {
         tokenHash: token,
         expiresAt: { gt: new Date() },
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const domains = await prisma.userDomain.findMany({
+    const domains = await db.userDomain.findMany({
       where: { userId: user.id, status: 'active' },
       include: {
         apiUsage: {
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if domain already exists for this user
-    const existingDomain = await prisma.userDomain.findFirst({
+    const existingDomain = await db.userDomain.findFirst({
       where: { 
         userId: user.id, 
         domain: domain.toLowerCase(),
@@ -105,13 +104,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create domain
-    const newDomain = await prisma.userDomain.create({
+    const newDomain = await db.userDomain.create({
       data: {
         userId: user.id,
         domain: domain.toLowerCase(),
         status: 'active'
       }
     })
+
+    // sync registries
+    try { await upsertDomainInRegistries(user.id, domain.toLowerCase(), 'active') } catch (e) { console.error('registry sync failed', e) }
 
     return NextResponse.json({ 
       success: true, 
@@ -152,13 +154,19 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete domain
-    await prisma.userDomain.update({
+    await db.userDomain.update({
       where: { 
         id: domainId,
         userId: user.id // Ensure user owns this domain
       },
       data: { status: 'deleted' }
     })
+
+    // Try to mark deleted in registries
+    try {
+      const d = await db.userDomain.findFirst({ where: { id: domainId, userId: user.id } })
+      if (d) await upsertDomainInRegistries(user.id, d.domain, 'deleted')
+    } catch (e) { console.error('registry delete sync failed', e) }
 
     return NextResponse.json({ success: true })
 

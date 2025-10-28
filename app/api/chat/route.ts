@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
+import { isDomainAllowed } from '@/lib/domain-registry'
 
 const prisma = new PrismaClient()
 
@@ -546,9 +547,9 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Verify domain
-    const domain = await verifyDomain(origin)
-    if (!domain) {
+    // Verify domain via registry/DB
+    const allow = await isDomainAllowed(origin)
+    if (!allow.ok) {
       debugLog('CHAT_API_INVALID_DOMAIN', null, `Invalid domain: ${origin}`)
       return NextResponse.json({ 
         error: true, 
@@ -558,8 +559,8 @@ export async function POST(request: NextRequest) {
     }
 
     debugLog('CHAT_API_AUTHENTICATED', { 
-      domain: domain.domain, 
-      userId: domain.userId,
+      domain: allow.domain, 
+      userId: allow.userId,
       origin 
     })
 
@@ -712,7 +713,13 @@ export async function POST(request: NextRequest) {
     // Record usage
     const tokensIn = trimmedMessage.length
     const tokensOut = result.response.length
-    await recordUsage(domain.id, tokensIn, tokensOut)
+    // Persist usage later; keep existing prisma usage if available
+    try {
+      if (allow.userId && allow.domain) {
+        const domainRow = await prisma.userDomain.findFirst({ where: { userId: allow.userId, domain: allow.domain } })
+        if (domainRow) await recordUsage(domainRow.id, tokensIn, tokensOut)
+      }
+    } catch (e) { console.error('record usage failed', e) }
     
     // Add CORS headers to the response
     const nextResponse = NextResponse.json(response);
