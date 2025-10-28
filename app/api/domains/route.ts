@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { upsertDomainInRegistries } from '@/lib/domain-registry'
+import { getUserIdFromRequest } from '@/lib/auth'
 
-// Get user from session token
-async function getUserFromToken(token: string) {
+// Get user from cookie session (JWT stored in 'session' cookie)
+async function getUserFromRequest(request: NextRequest) {
   try {
-    const session = await db.session.findFirst({
-      where: {
-        tokenHash: token,
-        expiresAt: { gt: new Date() },
-        revokedAt: null
-      },
-      include: { user: true }
-    })
-    return session?.user
+    const userId = getUserIdFromRequest(request)
+    if (!userId) return null
+    const user = await db.user.findUnique({ where: { id: userId } })
+    return user || null
   } catch (error) {
-    console.error('Error getting user from token:', error)
+    console.error('Error getting user from cookie session:', error)
     return null
   }
 }
@@ -23,13 +19,7 @@ async function getUserFromToken(token: string) {
 // GET - List user's domains
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const user = await getUserFromToken(token)
+    const user = await getUserFromRequest(request)
     
     if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
@@ -66,13 +56,7 @@ export async function GET(request: NextRequest) {
 // POST - Add new domain
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const user = await getUserFromToken(token)
+    const user = await getUserFromRequest(request)
     
     if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
@@ -134,13 +118,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove domain
 export async function DELETE(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const user = await getUserFromToken(token)
+    const user = await getUserFromRequest(request)
     
     if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
