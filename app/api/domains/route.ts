@@ -68,10 +68,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Domain is required' }, { status: 400 })
     }
 
-    // Validate domain format
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?(\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?)*$/
+    // Validate domain format - must be a proper domain with TLD
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
     if (!domainRegex.test(domain)) {
-      return NextResponse.json({ error: 'Invalid domain format' }, { status: 400 })
+      return NextResponse.json({ error: 'فرمت دامنه نامعتبر است. مثال: example.com' }, { status: 400 })
     }
 
     // Check if domain already exists for this user
