@@ -18,6 +18,10 @@ OPENROUTER_TITLE="Infinite 3D Explorer"
 # JWT Secret for User Authentication (Generate a secure random string)
 JWT_SECRET="your_very_secure_random_string_here"
 
+# Domain registry coding salt (required)
+# Set a long, random string (32+ chars). Example: output of `openssl rand -base64 48`
+DOMAIN_CODE_SALT="your_long_random_domain_code_salt_here"
+
 # Next.js Configuration
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your_nextauth_secret_here"
